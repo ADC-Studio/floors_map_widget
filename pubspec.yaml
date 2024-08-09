@@ -1,7 +1,7 @@
 name: floors_map_widget
 description: "This widget allows you to create an interactive building map from an SVG image"
 version: 0.0.1
-homepage:
+homepage: https://github.com/ADC-Studio/floors_map_widget.git
 
 environment:
   sdk: ^3.5.0

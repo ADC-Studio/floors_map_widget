@@ -13,7 +13,8 @@
 
 ## Commit conventions
 
-| Name  | Description |
+| Name  | Description                                                 |
+|-------|-------------------------------------------------------------|
 | build | Building a project or changing external dependencies        |
 | sec   | Security, vulnerabilities                                   |
 | docs  | Updating documentation                                      |

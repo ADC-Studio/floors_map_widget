@@ -13,7 +13,7 @@
 [![build](https://img.shields.io/github/actions/workflow/status/ADC-Studio/floors_map_widget/build.yml)](https://github.com/ADC-Studio/floors_map_widget/actions)
 [![release](https://img.shields.io/pub/v/floors_map_widget)](https://github.com/hydralauncher/hydra/releases)
 
-[![ru](https://img.shields.io/badge/lang-ru-yellow.svg)](README.ru.md)
+[![en](https://img.shields.io/badge/lang-ru-yellow.svg)](README.md)
 
 </div>
 

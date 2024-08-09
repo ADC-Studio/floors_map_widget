@@ -19,7 +19,7 @@
 | sec   | Security, vulnerabilities                                   |
 | docs  | Updating documentation                                      |
 | feat  | Adding new functionality                                    |
-| fix   | Error connection                                            |
+| fix   | Error correction                                            |
 | perf  | Changes aimed at improving performance                      |
 | ref   | Code edits without correcting errors or adding new features |
 | rev   | Rollback to previous commits                                |

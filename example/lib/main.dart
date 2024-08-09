@@ -205,27 +205,42 @@
 //   bool shouldRepaint(CustomPainter oldDelegate) => false;
 // }
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class PolygonPainter extends StatelessWidget {
+  const PolygonPainter({super.key});
+
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Polygon Painter Example'),
-      ),
-      body: Center(
-        child: PolygonTouchHandler(
-          onTap: () {
-            print('Polygon tapped!');
-          },
-          child: CustomPaint(
-            painter: SVGPathCustomPainter(),
+  Widget build(final BuildContext context) => Scaffold(
+        appBar: AppBar(
+          title: const Text('Polygon Painter Example'),
+        ),
+        body: Center(
+          child: InteractiveViewer(
+            child: Stack(
+              children: [
+                SvgPicture.asset(
+                  'assets/example.svg',
+                  // width: 1093,
+                  // height: 761,
+                ),
+                PolygonTouchHandler(
+                  onTap: () {
+                    if (kDebugMode) {
+                      print('Polygon tapped!');
+                    }
+                  },
+                  child: CustomPaint(
+                    painter: SVGPathCustomPainter(),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 class SVGPathCustomPainter extends CustomPainter {
@@ -247,9 +262,9 @@ class SVGPathCustomPainter extends CustomPainter {
           ..close(); // Закрытие контура
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(final Canvas canvas, final Size size) {
     final paintFill = Paint()
-      ..color = Color(0xFFA04D87) // Цвет заливки
+      ..color = const Color(0xFFA04D87) // Цвет заливки
       ..style = PaintingStyle.fill;
 
     final paintStroke = Paint()
@@ -258,75 +273,80 @@ class SVGPathCustomPainter extends CustomPainter {
       ..strokeWidth = 1.0; // Толщина обводки
 
     // Отрисовка пути
-    canvas.drawPath(path, paintFill);
-    canvas.drawPath(path, paintStroke);
+    canvas
+      ..drawPath(path, paintFill)
+      ..drawPath(path, paintStroke);
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
+  bool shouldRepaint(final CustomPainter oldDelegate) => false;
 }
 
 class PolygonTouchHandler extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
 
-  PolygonTouchHandler({required this.child, required this.onTap});
+  const PolygonTouchHandler({
+    required this.child,
+    required this.onTap,
+    super.key,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final path = Path()
-          ..moveTo(328.283, 181.09)
-          ..lineTo(328.283, 89.2973)
-          ..lineTo(328.283, 73.4319)
-          ..lineTo(365.964, 73.4319)
-          ..lineTo(365.964, 57.5664)
-          ..lineTo(472.489, 57.5664)
-          ..lineTo(472.489, 237.753)
-          ..lineTo(433.958, 237.753)
-          ..lineTo(433.958, 189.023)
-          ..lineTo(418.093, 189.023)
-          ..lineTo(418.093, 181.09)
-          ..close();
+  Widget build(final BuildContext context) => LayoutBuilder(
+        builder: (final context, final constraints) {
+          final path = Path()
+            ..moveTo(328.283, 181.09)
+            ..lineTo(328.283, 89.2973)
+            ..lineTo(328.283, 73.4319)
+            ..lineTo(365.964, 73.4319)
+            ..lineTo(365.964, 57.5664)
+            ..lineTo(472.489, 57.5664)
+            ..lineTo(472.489, 237.753)
+            ..lineTo(433.958, 237.753)
+            ..lineTo(433.958, 189.023)
+            ..lineTo(418.093, 189.023)
+            ..lineTo(418.093, 181.09)
+            ..close();
 
-        return GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.translucent,
-          child: CustomPaint(
-            size: Size(constraints.maxWidth, constraints.maxHeight),
-            painter: SVGPathCustomPainter(),
-            child: Builder(
-              builder: (context) {
-                final size = MediaQuery.of(context).size;
-                final offset = Offset(
-                    0, 0); // Возможно, вам нужно будет настроить смещение
+          return GestureDetector(
+            onTap: onTap,
+            behavior: HitTestBehavior.translucent,
+            child: CustomPaint(
+              size: Size(constraints.maxWidth, constraints.maxHeight),
+              painter: SVGPathCustomPainter(),
+              child: Builder(
+                builder: (final context) {
+                  final size = MediaQuery.of(context).size;
+                  const offset = Offset.zero;
 
-                return GestureDetector(
-                  onTapUp: (details) {
-                    final localPosition = details.localPosition;
-                    if (path.contains(
-                        localPosition.translate(-offset.dx, -offset.dy))) {
-                      onTap();
-                    }
-                  },
-                  child: Container(
-                    width: size.width,
-                    height: size.height,
-                    color: Colors.transparent,
-                  ),
-                );
-              },
+                  return GestureDetector(
+                    onTapUp: (final details) {
+                      final localPosition = details.localPosition;
+                      if (path.contains(
+                        localPosition.translate(-offset.dx, -offset.dy),
+                      )) {
+                        onTap();
+                      }
+                    },
+                    child: Container(
+                      width: size.width,
+                      height: size.height,
+                      color: Colors.transparent,
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        );
-      },
-    );
-  }
+          );
+        },
+      );
 }
 
 void main() {
-  runApp(MaterialApp(
-    home: PolygonPainter(),
-  ));
+  runApp(
+    const MaterialApp(
+      home: PolygonPainter(),
+    ),
+  );
 }

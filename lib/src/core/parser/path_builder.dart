@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'dart:math';
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:floors_map_widget/src/models/floor_point_priority.dart';
 
@@ -14,7 +13,7 @@ final class PathBuilder {
     required this.coords,
   });
 
-  List<int> findShortestPath() {
+  List<FloorPoint> findShortestPath() {
     // Intialize the distance list
     final distances = List<double>.filled(coords.length, double.infinity);
     // Nodes we are already used
@@ -69,14 +68,14 @@ final class PathBuilder {
     return _buildPath(prevNodes, end);
   }
 
-  List<int> _buildPath(
+  List<FloorPoint> _buildPath(
     final List<int?> prevNodes,
     final int end,
   ) {
     print('PrevNodes: $prevNodes');
-    final path = <int>[];
+    final path = <FloorPoint>[];
     for (int? at = end; at != null; at = prevNodes[at]) {
-      path.insert(0, coords[at].id);
+      path.insert(0, coords[at]);
     }
     return path;
   }

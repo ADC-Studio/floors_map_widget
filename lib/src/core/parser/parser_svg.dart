@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:floors_map_widget/src/core/parser/path_instruction.dart';
-import 'package:floors_map_widget/src/models/floor_point.dart';
 import 'package:xml/xml.dart' as xml;
 
 class SvgParser {
@@ -94,10 +93,8 @@ class SvgParser {
   }
 
   List<PathInstruction> _parsePathCommands(final String pathData) {
-    // Регулярное выражение для извлечения букв и чисел
     final regex = RegExp(r'([MLHVCZ])\s*([^A-Za-z]*)');
 
-    // Список для хранения найденных значений
     final List<PathInstruction> pathDataMap = [];
 
     // Поиск совпадений

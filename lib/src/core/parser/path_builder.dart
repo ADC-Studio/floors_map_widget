@@ -21,8 +21,8 @@ final class PathBuilder {
     // Queue with priorities
     final priorityQueue = PriorityQueue<FloorPointPriority>();
 
-    if (coords.indexWhere((el) => el.id == startId) == -1 ||
-        coords.indexWhere((el) => el.id == endId) == -1) {
+    if (coords.indexWhere((final el) => el.id == startId) == -1 ||
+        coords.indexWhere((final el) => el.id == endId) == -1) {
       throw ArgumentError('Start or end node does not exist in the graph.');
     }
     // Remap for elements with id
@@ -40,21 +40,17 @@ final class PathBuilder {
         break;
       }
 
-      for (int neighbor in coords[current.index].neighbours) {
+      for (final int neighbor in coords[current.index].neighbours) {
         final FloorPoint? nPoint =
             coords.firstWhereOrNull((final el) => el.id == neighbor);
         if (nPoint == null) {
-          print('null error');
           continue;
         }
         final nId = coords.indexOf(nPoint);
-        print('Current node: ${current.index}, checking neighbor: $nId');
         // Search more shorter path
-        double alt = distances[current.index] +
+        final double alt = distances[current.index] +
             _calculateDistance(coords[current.index], coords[nId]);
         if (alt < distances[nId]) {
-          print(
-              'Updating: Node $nId from Node ${current.index} with distance $alt');
           distances[nId] = alt;
           // Move to the next point
           prevNodes[nId] = current.index;
@@ -72,7 +68,6 @@ final class PathBuilder {
     final List<int?> prevNodes,
     final int end,
   ) {
-    print('PrevNodes: $prevNodes');
     final path = <FloorPoint>[];
     for (int? at = end; at != null; at = prevNodes[at]) {
       path.insert(0, coords[at]);
@@ -80,13 +75,6 @@ final class PathBuilder {
     return path;
   }
 
-  double _calculateDistance(final FloorPoint a, final FloorPoint b) {
-    return ((a.x - b.x).abs() + (a.y - b.y).abs());
-  }
-}
-
-extension on double {
-  double sqrt() {
-    return this / 2;
-  }
+  double _calculateDistance(final FloorPoint a, final FloorPoint b) =>
+      (a.x - b.x).abs() + (a.y - b.y).abs();
 }

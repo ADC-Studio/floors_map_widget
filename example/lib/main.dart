@@ -1,11 +1,12 @@
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
-final class SvgMap extends StatelessWidget {
+final class SvgMapExample extends StatelessWidget {
+  final String svgContent;
   final List<FloorItem> items;
 
-  const SvgMap({
+  const SvgMapExample({
+    required this.svgContent,
     required this.items,
     super.key,
   });
@@ -16,13 +17,7 @@ final class SvgMap extends StatelessWidget {
           child: Center(
             child: Stack(
               children: [
-                Center(
-                  child: SvgPicture.asset(
-                    'assets/example.svg',
-                    width: MediaQuery.of(context).size.width,
-                    height: MediaQuery.of(context).size.width,
-                  ),
-                ),
+                SvgMap(svgContent),
                 ...List.generate(
                   items.length,
                   (final i) => Center(
@@ -372,7 +367,12 @@ void main() {
         FloorPoint(floor: 1, id: 5, x: 356.2, y: 206.3, neighbours: [4, 6]),
         FloorPoint(floor: 1, id: 6, x: 416.4, y: 242.2, neighbours: [4, 5, 7]),
         FloorPoint(
-            floor: 1, id: 7, x: 481.9, y: 242.7, neighbours: [6, 8, 12, 16]),
+          floor: 1,
+          id: 7,
+          x: 481.9,
+          y: 242.7,
+          neighbours: [6, 8, 12, 16],
+        ),
         FloorPoint(floor: 1, id: 8, x: 481.8, y: 160.1, neighbours: [7, 9]),
         FloorPoint(floor: 1, id: 9, x: 483.1, y: 68, neighbours: [8, 10]),
         FloorPoint(floor: 1, id: 10, x: 585.6, y: 67.6, neighbours: [9, 11]),
@@ -416,9 +416,11 @@ void main() {
       ],
     ).findShortestPath(),
   );
+
   runApp(
     MaterialApp(
-      home: SvgMap(
+      home: SvgMapExample(
+        svgContent: svgContent,
         items: list,
       ),
     ),

@@ -138,49 +138,6 @@ class SvgParser {
     }
   }
 
-  FloorStairsType _getStairsType(final String key) {
-    final pathElements = document.findAllElements('path');
-    for (final pathElement in pathElements) {
-      if (pathElement.getAttribute('id') != key) {
-        continue;
-      }
-      final String fullKey = pathElement.getAttribute('id') ?? '';
-      try {
-        final partAfterFirstDash =
-            fullKey.substring(fullKey.indexOf('-') + 1).trim();
-
-        return FloorStairsType.fromString(
-          partAfterFirstDash.substring(0, partAfterFirstDash.lastIndexOf('-')),
-        );
-      } catch (e) {
-        throw FloorParserSvgException('Cant parse FloorStairs type  '
-            'Get: $key');
-      }
-    }
-    throw FloorParserSvgException('Element $key not found in getPaths time');
-  }
-
-  FloorHygieneZoneType _getHygieneZoneType(final String key) {
-    final pathElements = document.findAllElements('path');
-    for (final pathElement in pathElements) {
-      if (pathElement.getAttribute('id') != key) {
-        continue;
-      }
-      final String fullKey = pathElement.getAttribute('id') ?? '';
-      try {
-        final partAfterFirstDash =
-            fullKey.substring(fullKey.indexOf('-') + 1).trim();
-        return FloorHygieneZoneType.fromString(
-          partAfterFirstDash.substring(0, partAfterFirstDash.lastIndexOf('-')),
-        );
-      } catch (e) {
-        throw FloorParserSvgException('Cant parse HygieneZone type '
-            'Get: $key');
-      }
-    }
-    throw FloorParserSvgException('Element $key not found in getPaths time');
-  }
-
   Path getPaths(final String key) {
     final pathElements = document.findAllElements('path');
 
@@ -275,17 +232,25 @@ class SvgParser {
     for (final itemElement in itemElements) {
       final String fullKey = (itemElement.getAttribute('id') ?? '').trim();
 
-      if (!fullKey.contains('-')) {
+      if (!fullKey.contains('-') || !fullKey.contains('=')) {
         continue;
       }
 
-      final String keyMainType = fullKey.substring(0, fullKey.indexOf('-'));
-      // There may be a mistake here
-      final int? keyId =
-          int.tryParse(fullKey.substring(fullKey.lastIndexOf('-') + 1).trim());
+      final List<String> mainParts = fullKey.split('=');
+      final List<String> partsWithoutPoint = mainParts[0].split('-');
+      final String keyMainType = partsWithoutPoint[0];
+      late final int keyId;
 
-      if (keyId == null ||
-          !SupportedClasses.regexpCheckSupported.hasMatch(keyMainType)) {
+      try {
+        keyId = int.parse(partsWithoutPoint[partsWithoutPoint.length - 1]);
+      } on Exception {
+        throw FloorParserSvgException(
+          'ID object there must be int. Example: shop-1=1'
+          ' or toilet-male-1=30. Get: $fullKey',
+        );
+      }
+
+      if (!SupportedClasses.regexpCheckSupported.hasMatch(keyMainType)) {
         continue;
       }
 
@@ -344,7 +309,7 @@ class SvgParser {
                 // colorStroke: getColorStroke(fullKey),
               ),
               floor: floorNumber!,
-              type: _getHygieneZoneType(fullKey),
+              type: FloorHygieneZoneType.fromString(partsWithoutPoint[1]),
             ),
           );
         case SupportedClasses.stairs:
@@ -359,7 +324,7 @@ class SvgParser {
                 // colorStroke: getColorStroke(fullKey),
               ),
               floor: floorNumber!,
-              type: _getStairsType(fullKey),
+              type: FloorStairsType.fromString(partsWithoutPoint[1]),
             ),
           );
         // ignore: no_default_cases

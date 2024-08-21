@@ -1,90 +1,93 @@
 import 'package:collection/collection.dart';
-import 'package:floors_map_widget/src/models/floor_point.dart';
+import 'dart:math';
+import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:floors_map_widget/src/models/floor_point_priority.dart';
 
-// ignore: avoid_classes_with_only_static_members
-abstract class PathBuilder {
-  const PathBuilder();
+final class PathBuilder {
+  final int startId;
+  final int endId;
+  final List<FloorPoint> coords;
 
-  static List<int> findShortestPath(
-    final int startId,
-    final int endId,
-    final List<FloorPoint> points,
-  ) {
-    // Создание маппинга идентификаторов точек на их индексы
-    final idToIndex = Map<int, int>.fromIterable(
-      points,
-      key: (p) => p.id,
-      value: (p) => points.indexOf(p),
-    );
+  const PathBuilder({
+    required this.startId,
+    required this.endId,
+    required this.coords,
+  });
 
-    // Проверка существования идентификаторов
-    if (!idToIndex.containsKey(startId) || !idToIndex.containsKey(endId)) {
-      throw ArgumentError('Start or End ID does not exist in the points list.');
-    }
-
-    // Получение индексов начальной и конечной точек
-    final startIndex = idToIndex[startId]!;
-    final endIndex = idToIndex[endId]!;
-
-    final distances = List<double>.filled(points.length, double.infinity);
-    final prevNodes = List<int?>.filled(points.length, null);
+  List<int> findShortestPath() {
+    // Intialize the distance list
+    final distances = List<double>.filled(coords.length, double.infinity);
+    // Nodes we are already used
+    final prevNodes = List<int?>.filled(coords.length, null);
+    // Queue with priorities
     final priorityQueue = PriorityQueue<FloorPointPriority>();
 
-    distances[startIndex] = 0; // Weight
-    priorityQueue.add(FloorPointPriority(startIndex, 0));
+    if (coords.indexWhere((el) => el.id == startId) == -1 ||
+        coords.indexWhere((el) => el.id == endId) == -1) {
+      throw ArgumentError('Start or end node does not exist in the graph.');
+    }
+    // Remap for elements with id
+    final start =
+        coords.indexOf(coords.where((final el) => el.id == startId).first);
+    final end =
+        coords.indexOf(coords.where((final el) => el.id == endId).first);
+
+    distances[start] = 0;
+    priorityQueue.add(FloorPointPriority(start, 0));
 
     while (priorityQueue.isNotEmpty) {
       final current = priorityQueue.removeFirst();
-      print('Processing node: ${points[current.index].id}');
-
-      if (current.index == endIndex) {
+      if (current.index == end) {
         break;
       }
 
-      for (int neighbourId in points[current.index].neighbours) {
-        final neighbourIndex = idToIndex[neighbourId]!;
-        double altPoint = distances[current.index] +
-            _calculateDistance(points[current.index], points[neighbourIndex]);
-
-        print('Checking neighbour: ${points[neighbourIndex].id}');
-        print(
-            'Alt point: $altPoint, Current distance: ${distances[neighbourIndex]}');
-
-        if (altPoint < distances[neighbourIndex]) {
-          distances[neighbourIndex] = altPoint;
-          prevNodes[neighbourIndex] = current.index;
-          priorityQueue.add(
-            FloorPointPriority(neighbourIndex, altPoint),
-          );
+      for (int neighbor in coords[current.index].neighbours) {
+        final FloorPoint? nPoint =
+            coords.firstWhereOrNull((final el) => el.id == neighbor);
+        if (nPoint == null) {
+          print('null error');
+          continue;
+        }
+        final nId = coords.indexOf(nPoint);
+        print('Current node: ${current.index}, checking neighbor: $nId');
+        // Search more shorter path
+        double alt = distances[current.index] +
+            _calculateDistance(coords[current.index], coords[nId]);
+        if (alt < distances[nId]) {
+          print(
+              'Updating: Node $nId from Node ${current.index} with distance $alt');
+          distances[nId] = alt;
+          // Move to the next point
+          prevNodes[nId] = current.index;
+          // Change the priority
+          priorityQueue.add(FloorPointPriority(nId, alt));
         }
       }
     }
 
-    // Проверка достижимости конечной точки
-    // if (distances[endIndex] == double.infinity) {
-    //   // Если конечная точка недостижима
-    //   print('End node is unreachable');
-    //   return [];
-    // }
-
-    print('Path found');
-    return _buildPath(prevNodes, endIndex, idToIndex);
+    // Build the path with all previous nodes to the end
+    return _buildPath(prevNodes, end);
   }
 
-  static List<int> _buildPath(
+  List<int> _buildPath(
     final List<int?> prevNodes,
     final int end,
-    final Map<int, int> idToIndex,
   ) {
+    print('PrevNodes: $prevNodes');
     final path = <int>[];
     for (int? at = end; at != null; at = prevNodes[at]) {
-      final id = idToIndex.entries.firstWhere((e) => e.value == at).key;
-      path.insert(0, id);
+      path.insert(0, at);
     }
     return path;
   }
 
-  static double _calculateDistance(final FloorPoint a, final FloorPoint b) =>
-      (a.x - b.x).abs() + (a.y - b.y).abs();
+  double _calculateDistance(final FloorPoint a, final FloorPoint b) {
+    return ((a.x - b.x).abs() + (a.y - b.y).abs());
+  }
+}
+
+extension on double {
+  double sqrt() {
+    return this / 2;
+  }
 }

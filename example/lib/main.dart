@@ -53,7 +53,7 @@ void main() {
 <circle id="point-2=1-3-4-5" cx="335.5" cy="245.5" r="3.5" fill="black"/>
 <circle id="point-3=2-4-5" cx="335.5" cy="193.5" r="3.5" fill="black"/>
 <circle id="point-4=2-3-5" cx="386.5" cy="193.5" r="3.5" fill="black"/>
-<circle id="point-5=2-3-4" cx="389.5" cy="245.5" r="3.5" fill="black"/>
+<circle id="point-5=2-3-4-6" cx="389.5" cy="245.5" r="3.5" fill="black"/>
 <circle id="point-6=5-7" cx="441.5" cy="245.5" r="3.5" fill="black"/>
 <circle id="point-7=6" cx="484.5" cy="245.5" r="3.5" fill="black"/>
 </g>
@@ -69,33 +69,69 @@ void main() {
   final parser = SvgParser(svgContent: svgContent);
   final list = parser.getItems();
   final listPoints = parser.getPoints();
-  // listPoints.forEach((el) => print(el.neighbours));
+
   print(
-    PathBuilder.findShortestPath(
-      listPoints[0].id,
-      listPoints[6].id,
-      listPoints,
-    ),
+    PathBuilder(
+      startId: listPoints[1].id,
+      endId: listPoints[6].id,
+      coords: listPoints,
+    ).findShortestPath(),
   );
-  // print(PathBuilder.findShortestPath(6, 0, [
-  //   FloorPoint(floor: 1, id: 1, x: 333.9, y: 432.4, neighbours: [1, 2]),
-  //   FloorPoint(floor: 1, id: 1, x: 333.4, y: 344, neighbours: [0, 2, 3]),
-  //   FloorPoint(floor: 1, id: 1, x: 370.5, y: 343.3, neighbours: [0, 1, 3]),
-  //   FloorPoint(floor: 1, id: 1, x: 332.5, y: 303.8, neighbours: [1, 2, 4]),
-  //   FloorPoint(floor: 1, id: 1, x: 332.6, y: 242.4, neighbours: [3, 5, 6]),
-  //   FloorPoint(floor: 1, id: 1, x: 356.2, y: 206.3, neighbours: [4, 6]),
-  //   FloorPoint(floor: 1, id: 1, x: 416.4, y: 242.2, neighbours: [4, 5, 7]),
-  //   FloorPoint(floor: 1, id: 1, x: 481.9, y: 242.7, neighbours: [6, 8, 12, 16]),
-  //   FloorPoint(floor: 1, id: 1, x: 481.8, y: 160.1, neighbours: [7, 9]),
-  //   FloorPoint(floor: 1, id: 1, x: 483.1, y: 68, neighbours: [8, 10]),
-  //   FloorPoint(floor: 1, id: 1, x: 585.6, y: 67.6, neighbours: [9, 11]),
-  //   FloorPoint(floor: 1, id: 1, x: 585.8, y: 153.7, neighbours: [10, 12]),
-  //   FloorPoint(floor: 1, id: 1, x: 583.3, y: 242, neighbours: [7, 11, 13]),
-  //   FloorPoint(floor: 1, id: 1, x: 583.9, y: 321.1, neighbours: [12, 14]),
-  //   FloorPoint(floor: 1, id: 1, x: 586.2, y: 398, neighbours: [13, 15]),
-  //   FloorPoint(floor: 1, id: 1, x: 484.8, y: 400.5, neighbours: [14, 16]),
-  //   FloorPoint(floor: 1, id: 1, x: 479.9, y: 318, neighbours: [7, 15]),
-  // ]));
+  print(
+    PathBuilder(
+      startId: listPoints[6].id,
+      endId: listPoints[1].id,
+      coords: listPoints,
+    ).findShortestPath(),
+  );
+  // print(PathBuilder(startId: 6, endId: 3, coords: [
+  //   FloorPoint(id: 1, x: 335.5, y: 295.5, neighbours: [2], floor: 1),
+  //   FloorPoint(
+  //       id: 2, x: 335.5, y: 245.5, neighbours: [1, 3, 4, 5], floor: 1), // 1
+  //   FloorPoint(id: 3, x: 335.5, y: 193.5, neighbours: [2, 4, 5], floor: 1),
+  //   FloorPoint(id: 4, x: 386.5, y: 193.5, neighbours: [2, 3, 5], floor: 1),
+  //   FloorPoint(id: 5, x: 389.5, y: 245.5, neighbours: [2, 3, 4], floor: 1),
+  //   FloorPoint(id: 6, x: 441.5, y: 245.5, neighbours: [5, 7], floor: 1), // 5
+  //   FloorPoint(id: 7, x: 484.5, y: 245.5, neighbours: [6], floor: 1),
+  // ]).findShortestPath());
+  print(PathBuilder(startId: 0, endId: 16, coords: [
+    FloorPoint(floor: 1, id: 0, x: 333.9, y: 432.4, neighbours: [1, 2]),
+    FloorPoint(floor: 1, id: 1, x: 333.4, y: 344, neighbours: [0, 2, 3]),
+    FloorPoint(floor: 1, id: 2, x: 370.5, y: 343.3, neighbours: [0, 1, 3]),
+    FloorPoint(floor: 1, id: 3, x: 332.5, y: 303.8, neighbours: [1, 2, 4]),
+    FloorPoint(floor: 1, id: 4, x: 332.6, y: 242.4, neighbours: [3, 5, 6]),
+    FloorPoint(floor: 1, id: 5, x: 356.2, y: 206.3, neighbours: [4, 6]),
+    FloorPoint(floor: 1, id: 6, x: 416.4, y: 242.2, neighbours: [4, 5, 7]),
+    FloorPoint(floor: 1, id: 7, x: 481.9, y: 242.7, neighbours: [6, 8, 12, 16]),
+    FloorPoint(floor: 1, id: 8, x: 481.8, y: 160.1, neighbours: [7, 9]),
+    FloorPoint(floor: 1, id: 9, x: 483.1, y: 68, neighbours: [8, 10]),
+    FloorPoint(floor: 1, id: 10, x: 585.6, y: 67.6, neighbours: [9, 11]),
+    FloorPoint(floor: 1, id: 11, x: 585.8, y: 153.7, neighbours: [10, 12]),
+    FloorPoint(floor: 1, id: 12, x: 583.3, y: 242, neighbours: [7, 11, 13]),
+    FloorPoint(floor: 1, id: 13, x: 583.9, y: 321.1, neighbours: [12, 14]),
+    FloorPoint(floor: 1, id: 14, x: 586.2, y: 398, neighbours: [13, 15]),
+    FloorPoint(floor: 1, id: 15, x: 484.8, y: 400.5, neighbours: [14, 16]),
+    FloorPoint(floor: 1, id: 16, x: 479.9, y: 318, neighbours: [7, 15]),
+  ]).findShortestPath());
+  print(PathBuilder(startId: 16, endId: 0, coords: [
+    FloorPoint(floor: 1, id: 0, x: 333.9, y: 432.4, neighbours: [1, 2]),
+    FloorPoint(floor: 1, id: 1, x: 333.4, y: 344, neighbours: [0, 2, 3]),
+    FloorPoint(floor: 1, id: 2, x: 370.5, y: 343.3, neighbours: [0, 1, 3]),
+    FloorPoint(floor: 1, id: 3, x: 332.5, y: 303.8, neighbours: [1, 2, 4]),
+    FloorPoint(floor: 1, id: 4, x: 332.6, y: 242.4, neighbours: [3, 5, 6]),
+    FloorPoint(floor: 1, id: 5, x: 356.2, y: 206.3, neighbours: [4, 6]),
+    FloorPoint(floor: 1, id: 6, x: 416.4, y: 242.2, neighbours: [4, 5, 7]),
+    FloorPoint(floor: 1, id: 7, x: 481.9, y: 242.7, neighbours: [6, 8, 12, 16]),
+    FloorPoint(floor: 1, id: 8, x: 481.8, y: 160.1, neighbours: [7, 9]),
+    FloorPoint(floor: 1, id: 9, x: 483.1, y: 68, neighbours: [8, 10]),
+    FloorPoint(floor: 1, id: 10, x: 585.6, y: 67.6, neighbours: [9, 11]),
+    FloorPoint(floor: 1, id: 11, x: 585.8, y: 153.7, neighbours: [10, 12]),
+    FloorPoint(floor: 1, id: 12, x: 583.3, y: 242, neighbours: [7, 11, 13]),
+    FloorPoint(floor: 1, id: 13, x: 583.9, y: 321.1, neighbours: [12, 14]),
+    FloorPoint(floor: 1, id: 14, x: 586.2, y: 398, neighbours: [13, 15]),
+    FloorPoint(floor: 1, id: 15, x: 484.8, y: 400.5, neighbours: [14, 16]),
+    FloorPoint(floor: 1, id: 16, x: 479.9, y: 318, neighbours: [7, 15]),
+  ]).findShortestPath());
   runApp(
     MaterialApp(
       home: SvgMap(

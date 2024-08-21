@@ -76,7 +76,7 @@ final class PathBuilder {
     print('PrevNodes: $prevNodes');
     final path = <int>[];
     for (int? at = end; at != null; at = prevNodes[at]) {
-      path.insert(0, at);
+      path.insert(0, coords[at].id);
     }
     return path;
   }

@@ -1,1 +1,5 @@
-export 'src/floors_map_widget.dart';
+export 'src/core/config/supported_сlasses.dart';
+export 'src/core/failures/parser_error.dart';
+export 'src/core/parser/parser_svg.dart';
+export 'src/models/models.dart';
+export 'src/widgets/floor_map_widget.dart';

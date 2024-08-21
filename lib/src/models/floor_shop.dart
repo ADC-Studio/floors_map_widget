@@ -15,9 +15,8 @@ final class FloorShop extends FloorItem {
 
   const FloorShop({
     required super.key,
-    required super.aray,
+    required super.drawingInstructions,
     required super.floor,
-    super.onTap,
     super.icon,
     this.title,
     this.description,

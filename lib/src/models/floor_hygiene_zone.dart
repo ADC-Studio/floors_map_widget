@@ -1,4 +1,4 @@
-import 'package:floors_map_widget/src/models/floor_item.dart';
+import 'package:floors_map_widget/floors_map_widget.dart';
 
 /// Means the floor item is hygiene zone
 final class FloorHygieneZone extends FloorItem {
@@ -6,20 +6,9 @@ final class FloorHygieneZone extends FloorItem {
 
   const FloorHygieneZone({
     required super.key,
-    required super.aray,
+    required super.drawingInstructions,
     required super.floor,
     required this.type,
-    super.onTap,
     super.icon,
   });
-}
-
-enum FloorHygieneZoneType {
-  maleRoom('MALE'),
-  femaleRoom('FEMALE'),
-  motherAndChildRoom('MOTHER_AND_CHILD');
-
-  final String type;
-
-  const FloorHygieneZoneType(this.type);
 }

@@ -1,4 +1,4 @@
-import 'package:floors_map_widget/src/models/floor_item.dart';
+import 'package:floors_map_widget/floors_map_widget.dart';
 
 /// Means the floor item is stairs
 final class FloorStairs extends FloorItem {
@@ -7,21 +7,9 @@ final class FloorStairs extends FloorItem {
 
   const FloorStairs({
     required super.key,
-    required super.aray,
+    required super.drawingInstructions,
     required super.floor,
     required this.type,
-    super.onTap,
     super.icon,
   });
-}
-
-enum FloorStairsType {
-  stairs('STAIRS'),
-  fireEscape('FIRE_ESCAPE'),
-  esquator('ESQUATOR'),
-  elevator('ELEVATOR');
-
-  final String type;
-
-  const FloorStairsType(this.type);
 }

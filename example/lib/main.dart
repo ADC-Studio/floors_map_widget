@@ -68,8 +68,34 @@ void main() {
 
   final parser = SvgParser(svgContent: svgContent);
   final list = parser.getItems();
-
   final listPoints = parser.getPoints();
+  // listPoints.forEach((el) => print(el.neighbours));
+  print(
+    PathBuilder.findShortestPath(
+      listPoints[0].id,
+      listPoints[6].id,
+      listPoints,
+    ),
+  );
+  // print(PathBuilder.findShortestPath(6, 0, [
+  //   FloorPoint(floor: 1, id: 1, x: 333.9, y: 432.4, neighbours: [1, 2]),
+  //   FloorPoint(floor: 1, id: 1, x: 333.4, y: 344, neighbours: [0, 2, 3]),
+  //   FloorPoint(floor: 1, id: 1, x: 370.5, y: 343.3, neighbours: [0, 1, 3]),
+  //   FloorPoint(floor: 1, id: 1, x: 332.5, y: 303.8, neighbours: [1, 2, 4]),
+  //   FloorPoint(floor: 1, id: 1, x: 332.6, y: 242.4, neighbours: [3, 5, 6]),
+  //   FloorPoint(floor: 1, id: 1, x: 356.2, y: 206.3, neighbours: [4, 6]),
+  //   FloorPoint(floor: 1, id: 1, x: 416.4, y: 242.2, neighbours: [4, 5, 7]),
+  //   FloorPoint(floor: 1, id: 1, x: 481.9, y: 242.7, neighbours: [6, 8, 12, 16]),
+  //   FloorPoint(floor: 1, id: 1, x: 481.8, y: 160.1, neighbours: [7, 9]),
+  //   FloorPoint(floor: 1, id: 1, x: 483.1, y: 68, neighbours: [8, 10]),
+  //   FloorPoint(floor: 1, id: 1, x: 585.6, y: 67.6, neighbours: [9, 11]),
+  //   FloorPoint(floor: 1, id: 1, x: 585.8, y: 153.7, neighbours: [10, 12]),
+  //   FloorPoint(floor: 1, id: 1, x: 583.3, y: 242, neighbours: [7, 11, 13]),
+  //   FloorPoint(floor: 1, id: 1, x: 583.9, y: 321.1, neighbours: [12, 14]),
+  //   FloorPoint(floor: 1, id: 1, x: 586.2, y: 398, neighbours: [13, 15]),
+  //   FloorPoint(floor: 1, id: 1, x: 484.8, y: 400.5, neighbours: [14, 16]),
+  //   FloorPoint(floor: 1, id: 1, x: 479.9, y: 318, neighbours: [7, 15]),
+  // ]));
   runApp(
     MaterialApp(
       home: SvgMap(

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:floors_map_widget/src/core/parser/path_instruction.dart';
+import 'package:floors_map_widget/src/models/floor_point.dart';
 import 'package:xml/xml.dart' as xml;
 
 class SvgParser {
@@ -231,18 +232,63 @@ class SvgParser {
     return null;
   }
 
+  List<FloorPoint> getPoints() {
+    final List<FloorPoint> pointList = [];
+
+    final pointElements = document.findAllElements('circle');
+
+    for (final pointElement in pointElements) {
+      final String fullKey = (pointElement.getAttribute('id') ?? '').trim();
+
+      if (!fullKey.contains('-')) {
+        continue;
+      }
+
+      final String x = (pointElement.getAttribute('cx') ?? '').trim();
+      final String y = (pointElement.getAttribute('cy') ?? '').trim();
+
+      final List<String> parts = fullKey.split('=');
+      final String keyMainType = parts[0].split('-')[0];
+      // There may be a mistake here
+      final int keyId = int.parse(parts[0].split('-')[1]);
+      final List<int> neighbours = parts[1].split('-').map(int.parse).toList();
+
+      if (!keyMainType.toLowerCase().trim().contains('point')) {
+        continue;
+      }
+
+      pointList.add(
+        FloorPoint(
+          id: keyId,
+          floor: floorNumber!,
+          x: double.parse(x),
+          y: double.parse(y),
+          neighbours: neighbours,
+        ),
+      );
+    }
+    return pointList;
+  }
+
   List<FloorItem> getItems() {
     final List<FloorItem> floorItems = [];
 
     final itemElements = document.findAllElements('path');
 
     for (final itemElement in itemElements) {
-      final String fullKey = itemElement.getAttribute('id') ?? '';
-      final String keyMainType = fullKey.substring(0, fullKey.indexOf('-'));
-      final String keyId =
-          fullKey.substring(fullKey.lastIndexOf('-') + 1).trim();
+      final String fullKey = (itemElement.getAttribute('id') ?? '').trim();
 
-      if (!SupportedClasses.regexpCheckSupported.hasMatch(keyMainType)) {
+      if (!fullKey.contains('-')) {
+        continue;
+      }
+
+      final String keyMainType = fullKey.substring(0, fullKey.indexOf('-'));
+      // There may be a mistake here
+      final int? keyId =
+          int.tryParse(fullKey.substring(fullKey.lastIndexOf('-') + 1).trim());
+
+      if (keyId == null ||
+          !SupportedClasses.regexpCheckSupported.hasMatch(keyMainType)) {
         continue;
       }
 

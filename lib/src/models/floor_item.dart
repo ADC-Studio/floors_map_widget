@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 /// Parent class for all floor items
 abstract class FloorItem {
   /// Unique identifier for floor item
-  final String key;
+  final int key;
 
   /// DrawingInstructions for floor item
   final DrawingInstructions drawingInstructions;

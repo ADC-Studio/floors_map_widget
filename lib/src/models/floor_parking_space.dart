@@ -21,5 +21,6 @@ final class FloorParkingSpace extends FloorItem {
     this.hasChargingPlace,
     this.hasWashingPlace,
     super.icon,
+    super.idPoint,
   });
 }

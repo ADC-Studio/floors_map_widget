@@ -229,6 +229,7 @@ class SvgParser {
 
     final itemElements = document.findAllElements('path');
 
+    // TODO: добавить проверку под элементов
     for (final itemElement in itemElements) {
       final String fullKey = (itemElement.getAttribute('id') ?? '').trim();
 
@@ -240,9 +241,11 @@ class SvgParser {
       final List<String> partsWithoutPoint = mainParts[0].split('-');
       final String keyMainType = partsWithoutPoint[0];
       late final int keyId;
+      late final int pointId;
 
       try {
         keyId = int.parse(partsWithoutPoint[partsWithoutPoint.length - 1]);
+        pointId = int.parse(mainParts[1]);
       } on Exception {
         throw FloorParserSvgException(
           'ID object there must be int. Example: shop-1=1'
@@ -260,6 +263,7 @@ class SvgParser {
             FloorShop(
               key: keyId,
               floor: floorNumber!,
+              idPoint: pointId,
               drawingInstructions: DrawingInstructions(
                 clickableArea: getPaths(fullKey),
                 sizeParentSvg: svgSize,
@@ -273,6 +277,7 @@ class SvgParser {
           floorItems.add(
             FloorParkingSpace(
               key: keyId,
+              idPoint: pointId,
               drawingInstructions: DrawingInstructions(
                 clickableArea: getPaths(fullKey),
                 sizeParentSvg: svgSize,
@@ -287,6 +292,7 @@ class SvgParser {
           floorItems.add(
             FloorAtmMachine(
               key: keyId,
+              idPoint: pointId,
               drawingInstructions: DrawingInstructions(
                 clickableArea: getPaths(fullKey),
                 sizeParentSvg: svgSize,
@@ -301,6 +307,7 @@ class SvgParser {
           floorItems.add(
             FloorHygieneZone(
               key: keyId,
+              idPoint: pointId,
               drawingInstructions: DrawingInstructions(
                 clickableArea: getPaths(fullKey),
                 sizeParentSvg: svgSize,
@@ -316,6 +323,7 @@ class SvgParser {
           floorItems.add(
             FloorStairs(
               key: keyId,
+              idPoint: pointId,
               drawingInstructions: DrawingInstructions(
                 clickableArea: getPaths(fullKey),
                 sizeParentSvg: svgSize,

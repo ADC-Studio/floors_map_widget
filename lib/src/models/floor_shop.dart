@@ -17,10 +17,11 @@ final class FloorShop extends FloorItem {
     required super.key,
     required super.drawingInstructions,
     required super.floor,
-    super.icon,
     this.title,
     this.description,
     this.openTime,
     this.closeTime,
+    super.icon,
+    super.idPoint,
   });
 }

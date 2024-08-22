@@ -11,5 +11,6 @@ final class FloorStairs extends FloorItem {
     required super.floor,
     required this.type,
     super.icon,
+    super.idPoint,
   });
 }

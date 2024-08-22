@@ -11,5 +11,6 @@ final class FloorAtmMachine extends FloorItem {
     required super.floor,
     this.title,
     super.icon,
+    super.idPoint,
   });
 }

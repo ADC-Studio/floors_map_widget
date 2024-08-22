@@ -10,5 +10,6 @@ final class FloorHygieneZone extends FloorItem {
     required super.floor,
     required this.type,
     super.icon,
+    super.idPoint,
   });
 }

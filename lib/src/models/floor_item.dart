@@ -16,11 +16,15 @@ abstract class FloorItem {
   /// Icon for marker
   final Widget? icon;
 
+  /// Id negbour point
+  final int? idPoint;
+
   const FloorItem({
     required this.key,
     required this.drawingInstructions,
     required this.floor,
     this.icon,
+    this.idPoint,
   });
 
   @override

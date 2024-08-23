@@ -13,7 +13,7 @@ final class PathBuilder {
     required this.coords,
   });
 
-  List<FloorPoint> findShortestPath() {
+  Map<String, dynamic> findShortestPath() {
     // Intialize the distance list
     final distances = List<double>.filled(coords.length, double.infinity);
     // Nodes we are already used
@@ -61,7 +61,10 @@ final class PathBuilder {
     }
 
     // Build the path with all previous nodes to the end
-    return _buildPath(prevNodes, end);
+    return {
+      'points': _buildPath(prevNodes, end),
+      'length': distances.where((final el) => el != double.infinity).sum,
+    };
   }
 
   List<FloorPoint> _buildPath(

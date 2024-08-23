@@ -330,6 +330,15 @@ void main() {
   final list = parser.getItems();
   final listPoints = parser.getPoints();
 
+  // final Iterable<FloorStairs> stairs = list.whereType<FloorStairs>();
+  // print(
+  //   PathBuilder(
+  //     startId: listPoints[1].id,
+  //     endId: getNearestStair(listPoints[1].id, stairs, listPoints).idPoint!,
+  //     coords: listPoints,
+  //   ),
+  // );
+
   print(
     PathBuilder(
       startId: listPoints[1].id,

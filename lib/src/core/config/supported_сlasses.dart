@@ -1,4 +1,5 @@
 import 'package:floors_map_widget/floors_map_widget.dart';
+import 'package:flutter/material.dart';
 
 /// SupportedClasses in floor_map
 enum SupportedClasses {
@@ -15,6 +16,38 @@ enum SupportedClasses {
   // Статический метод для получения значения toNameClass по экземпляру
   static String getNameClass(final SupportedClasses instance) =>
       instance.toNameClass;
+
+  static IconData getStandartIcon(final SupportedClasses instance) {
+    switch (instance) {
+      case SupportedClasses.shop:
+        return Icons.shopify;
+      case SupportedClasses.parkingSpace:
+        return Icons.local_parking;
+      case SupportedClasses.atmMachine:
+        return Icons.local_atm;
+      case SupportedClasses.toilet:
+        return Icons.wc;
+      case SupportedClasses.stairs:
+        return Icons.stairs;
+    }
+  }
+
+  //! TODO: DEL IT
+  static IconData getStandartIconD(final FloorItem instance) {
+    if (instance is FloorShop) {
+      return Icons.shopify;
+    } else if (instance is FloorParkingSpace) {
+      return Icons.local_parking;
+    } else if (instance is FloorAtmMachine) {
+      return Icons.local_atm;
+    } else if (instance is FloorHygieneZone) {
+      return Icons.wc;
+    } else if (instance is FloorStairs) {
+      return Icons.stairs;
+    } else {
+      throw Exception();
+    }
+  }
 
   // Метод для конвертации строки в SupportedClasses
   static SupportedClasses fromString(final String str) {

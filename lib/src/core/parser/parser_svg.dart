@@ -218,6 +218,7 @@ class SvgParser {
           x: double.parse(x),
           y: double.parse(y),
           neighbours: neighbours,
+          sizeParentSvg: svgSize,
         ),
       );
     }

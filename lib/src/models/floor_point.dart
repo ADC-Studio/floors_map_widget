@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 /// Means the floor point
 final class FloorPoint {
   final int id;
@@ -5,6 +7,7 @@ final class FloorPoint {
   final double y;
   final List<int> neighbours;
   final int floor;
+  final Size sizeParentSvg;
 
   const FloorPoint({
     required this.id,
@@ -12,5 +15,6 @@ final class FloorPoint {
     required this.y,
     required this.neighbours,
     required this.floor,
+    required this.sizeParentSvg,
   });
 }

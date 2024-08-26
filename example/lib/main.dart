@@ -290,7 +290,7 @@ void main() {
 <circle id="point-32=7" cx="385.5" cy="281.5" r="3.5" fill="black"/>
 <circle id="point-8=6-7-9" cx="346.5" cy="215.5" r="3.5" fill="black"/>
 <circle id="point-9=6-7-8" cx="385.5" cy="245.5" r="3.5" fill="black"/>
-<circle id="point-10=9-11-17-24" cx="486.5" cy="245.5" r="3.5" fill="black"/>
+<circle id="point-10=9-11-17-25" cx="486.5" cy="245.5" r="3.5" fill="black"/>
 <circle id="point-11=10-12" cx="486.5" cy="144.5" r="3.5" fill="black"/>
 <circle id="point-33=11" cx="459.5" cy="144.5" r="3.5" fill="black"/>
 <circle id="point-12=11-13" cx="486.5" cy="74.5" r="3.5" fill="black"/>
@@ -309,7 +309,7 @@ void main() {
 <circle id="point-22=20-21-23-24" cx="555.5" cy="461.5" r="3.5" fill="black"/>
 <circle id="point-23=20-22-24-25" cx="486.5" cy="429.5" r="3.5" fill="black"/>
 <circle id="point-24=23-22" cx="447.5" cy="479.5" r="3.5" fill="black"/>
-<circle id="point-25=10-24" cx="486.5" cy="320.5" r="3.5" fill="black"/>
+<circle id="point-25=10-23" cx="486.5" cy="320.5" r="3.5" fill="black"/>
 <circle id="point-26=17-27-28" cx="674.5" cy="245.5" r="3.5" fill="black"/>
 <circle id="point-27=26" cx="690.5" cy="307.5" r="3.5" fill="black"/>
 <circle id="point-28=27-29" cx="676.5" cy="214.5" r="3.5" fill="black"/>

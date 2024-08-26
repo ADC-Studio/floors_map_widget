@@ -9,7 +9,7 @@ class FloorMapWidget extends StatefulWidget {
   const FloorMapWidget({
     required this.item,
     this.onTap,
-    this.duration = const Duration(milliseconds: 200),
+    this.duration = const Duration(milliseconds: 50),
     super.key,
   });
 
@@ -20,6 +20,7 @@ class FloorMapWidget extends StatefulWidget {
 class _FloorMapWidgetState extends State<FloorMapWidget>
     with SingleTickerProviderStateMixin {
   bool _isInsideShape = false;
+  bool _isAnimating = false;
   late AnimationController _animationController;
   late Animation<Color?> _colorAnimation;
 
@@ -57,6 +58,14 @@ class _FloorMapWidgetState extends State<FloorMapWidget>
 
     _colorAnimation = ColorTween(begin: Colors.transparent, end: Colors.black26)
         .animate(_animationController);
+
+    _animationController.addStatusListener((final status) {
+      if (status == AnimationStatus.completed) {
+        _isAnimating = true;
+      } else if (status == AnimationStatus.dismissed) {
+        _isAnimating = false;
+      }
+    });
   }
 
   @override
@@ -66,40 +75,74 @@ class _FloorMapWidgetState extends State<FloorMapWidget>
   }
 
   @override
-  Widget build(final BuildContext context) => GestureDetector(
-        onPanDown: (final details) {
-          _isInsideShape = _getPathWithOffset().contains(details.localPosition);
-          if (_isInsideShape) {
-            _animationController.forward();
-          }
-        },
-        onTapUp: (final details) {
-          _isInsideShape = _getPathWithOffset().contains(details.localPosition);
-          if (_isInsideShape) {
+  Widget build(final BuildContext context) => ClipPath(
+        clipper: _ShapeClipper(_getPathWithOffset()),
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          // onPanDown: (final details) {
+          //   _isInsideShape =
+          //       _getPathWithOffset().contains(details.localPosition);
+          //   if (_isInsideShape) {
+          //     _animationController.forward();
+          //   }
+          // },
+          onTapUp: (final details) {
+            _isInsideShape =
+                _getPathWithOffset().contains(details.localPosition);
+            if (_isInsideShape) {
+              //   if (_isAnimating) {
+              //     // If the animation is running, reverse it only if it's completed
+              //     _animationController.addStatusListener((status) {
+              //       if (status == AnimationStatus.completed) {
+              //         _animationController.reverse();
+              //       }
+              //     });
+              //   } else {
+              //     _animationController.reverse();
+              //   }
+
+              if (_animationController.isAnimating) {
+                // Delay the reverse call until the animation completes
+                Future.delayed(_animationController.duration!, () {
+                  if (_animationController.status == AnimationStatus.forward) {
+                    _animationController.reverse();
+                  }
+                });
+              } else {
+                _animationController.reverse();
+              }
+            }
+          },
+          onTapDown: (final details) {
             widget.onTap?.call();
-            _animationController.reverse();
-          }
-        },
-        onPanUpdate: (final details) {
-          _isInsideShape = _getPathWithOffset().contains(details.localPosition);
-          if (!_isInsideShape) {
-            _animationController.reverse();
-          }
-        },
-        onPanEnd: (final _) {
-          if (_isInsideShape) {
-            widget.onTap?.call();
-            _animationController.reverse();
-          }
-        },
-        child: AnimatedBuilder(
-          animation: _animationController,
-          builder: (final context, final child) => CustomPaint(
-            painter: _CustomShapePainter(
-              _getPathWithOffset(),
-              _colorAnimation.value ?? Colors.transparent,
+            _isInsideShape =
+                _getPathWithOffset().contains(details.localPosition);
+            if (_isInsideShape && !_isAnimating) {
+              _animationController.forward();
+            }
+          },
+          // onPanUpdate: (final details) {
+          //   _isInsideShape =
+          //       _getPathWithOffset().contains(details.localPosition);
+          //   if (!_isInsideShape) {
+          //     _animationController.reverse();
+          //   }
+          // },
+          // onPanEnd: (final _) {
+          //   if (_isInsideShape) {
+          //     widget.onTap?.call();
+          //     _animationController.reverse();
+          //   }
+          // },
+          child: AnimatedBuilder(
+            animation: _animationController,
+            builder: (final context, final child) => CustomPaint(
+              painter: _CustomShapePainter(
+                _getPathWithOffset(),
+                _colorAnimation.value ?? Colors.transparent,
+              ),
+              child: Container(),
             ),
-            child: Container(),
           ),
         ),
       );
@@ -125,4 +168,16 @@ class _CustomShapePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant final CustomPainter oldDelegate) => true;
+}
+
+class _ShapeClipper extends CustomClipper<Path> {
+  final Path path;
+
+  _ShapeClipper(this.path);
+
+  @override
+  Path getClip(final Size size) => path;
+
+  @override
+  bool shouldReclip(final CustomClipper<Path> oldClipper) => oldClipper != this;
 }

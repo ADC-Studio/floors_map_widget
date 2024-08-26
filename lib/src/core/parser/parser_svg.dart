@@ -47,6 +47,15 @@ class SvgParser {
     return Color(int.parse(buffer.toString(), radix: 16));
   }
 
+  Map<String, String> getCoordinatesFromPath(final String pathData) {
+    final regex = RegExp(r'M(\d+\.\d+)\s(\d+)');
+    final data = regex.firstMatch(pathData);
+    return {
+      'x': data!.group(1)!,
+      'y': data.group(2)!,
+    };
+  }
+
   Path parsePathData(final String pathData) {
     final path = Path();
     final commands = _parsePathCommands(pathData);
@@ -189,17 +198,31 @@ class SvgParser {
   List<FloorPoint> getPoints() {
     final List<FloorPoint> pointList = [];
 
-    final pointElements = document.findAllElements('circle');
+    final pointElements = document.findAllElements('circle').toList();
+    final pathElements = document.findAllElements('path').toList();
+    final combinedElements = pointElements + pathElements;
 
-    for (final pointElement in pointElements) {
+    for (final pointElement in combinedElements) {
       final String fullKey = (pointElement.getAttribute('id') ?? '').trim();
 
-      if (!fullKey.contains('-')) {
+      if (!fullKey.contains('-') ||
+          !fullKey.contains('=') ||
+          !fullKey.contains('point')) {
         continue;
       }
 
-      final String x = (pointElement.getAttribute('cx') ?? '').trim();
-      final String y = (pointElement.getAttribute('cy') ?? '').trim();
+      late final String x;
+      late final String y;
+
+      if (pointElement.localName == 'circle') {
+        x = (pointElement.getAttribute('cx') ?? '').trim();
+        y = (pointElement.getAttribute('cy') ?? '').trim();
+      } else {
+        final coords =
+            getCoordinatesFromPath(pointElement.getAttribute('d') ?? '');
+        x = coords['x'] ?? '';
+        y = coords['y'] ?? '';
+      }
 
       final List<String> parts = fullKey.split('=');
       final String keyMainType = parts[0].split('-')[0];

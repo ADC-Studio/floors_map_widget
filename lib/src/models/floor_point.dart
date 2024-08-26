@@ -17,4 +17,8 @@ final class FloorPoint {
     required this.floor,
     required this.sizeParentSvg,
   });
+
+  @override
+  String toString() => 'FloorPoint id: $id, x: $x, y: $y, floor: $floor, '
+      'sizeParentSvg: $sizeParentSvg, neighbours: $neighbours';
 }

@@ -42,7 +42,8 @@ class _SvgMapState extends State<SvgMap> {
   @override
   Widget build(final BuildContext context) => Center(
         child: SvgPicture.string(
-          cleanPointFromMap(),
+          // cleanPointFromMap(),
+          widget.svgContent,
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
         ),

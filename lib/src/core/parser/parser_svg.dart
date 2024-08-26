@@ -241,6 +241,11 @@ class SvgParser {
       final List<String> mainParts = fullKey.split('=');
       final List<String> partsWithoutPoint = mainParts[0].split('-');
       final String keyMainType = partsWithoutPoint[0];
+
+      if (keyMainType == 'point') {
+        continue;
+      }
+
       late final int keyId;
       late final int pointId;
 

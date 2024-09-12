@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -5,14 +7,16 @@ class FloorMapWidget extends StatefulWidget {
   final FloorItem item;
   final Future<void> Function()? onTap;
   final Duration duration;
-  final bool isActiveColor;
+  final Duration durationBlink;
+  final bool isActiveBlinking;
   final Color? selectedColor;
 
   const FloorMapWidget({
     required this.item,
     this.onTap,
     this.duration = const Duration(milliseconds: 50),
-    this.isActiveColor = false,
+    this.durationBlink = const Duration(seconds: 1),
+    this.isActiveBlinking = false,
     this.selectedColor,
     super.key,
   });
@@ -55,8 +59,20 @@ class _FloorMapWidgetState extends State<FloorMapWidget>
   @override
   void initState() {
     super.initState();
+    _initializeAnimation();
+    // _animationController.addStatusListener((final status) {
+    //   if (status == AnimationStatus.completed) {
+    //     _isAnimating = true;
+    //   } else if (status == AnimationStatus.dismissed) {
+    //     _isAnimating = false;
+    //   }
+    // });
+  }
+
+  void _initializeAnimation() {
     _animationController = AnimationController(
-      duration: widget.duration,
+      duration:
+          widget.isActiveBlinking ? widget.durationBlink : widget.duration,
       vsync: this,
     );
 
@@ -65,17 +81,21 @@ class _FloorMapWidgetState extends State<FloorMapWidget>
       end: widget.selectedColor ?? Colors.black26,
     ).animate(_animationController);
 
-    if (widget.isActiveColor) {
-      _animationController.forward();
+    if (widget.isActiveBlinking) {
+      _animationController.repeat(reverse: true);
     }
+  }
 
-    // _animationController.addStatusListener((final status) {
-    //   if (status == AnimationStatus.completed) {
-    //     _isAnimating = true;
-    //   } else if (status == AnimationStatus.dismissed) {
-    //     _isAnimating = false;
-    //   }
-    // });
+  @override
+  void didUpdateWidget(covariant final FloorMapWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.isActiveBlinking != oldWidget.isActiveBlinking ||
+        widget.durationBlink != oldWidget.durationBlink ||
+        widget.selectedColor != oldWidget.selectedColor) {
+      _animationController.dispose();
+      _initializeAnimation();
+    }
   }
 
   @override
@@ -119,7 +139,7 @@ class _FloorMapWidgetState extends State<FloorMapWidget>
           onTapDown: (widget.onTap == null)
               ? null
               : (final details) async {
-                  await _animationController.forward();
+                  unawaited(_animationController.forward());
                   if (widget.onTap != null) {
                     await widget.onTap?.call();
                   }

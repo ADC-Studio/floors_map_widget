@@ -26,7 +26,7 @@ class FloorMapWidget extends StatefulWidget {
 }
 
 class _FloorMapWidgetState extends State<FloorMapWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool _isInsideShape = false;
   // bool _isAnimating = false;
   late AnimationController _animationController;
@@ -93,6 +93,9 @@ class _FloorMapWidgetState extends State<FloorMapWidget>
     if (widget.isActiveBlinking != oldWidget.isActiveBlinking ||
         widget.durationBlink != oldWidget.durationBlink ||
         widget.selectedColor != oldWidget.selectedColor) {
+      if (_animationController.isAnimating) {
+        _animationController.stop();
+      }
       _animationController.dispose();
       _initializeAnimation();
     }

@@ -68,7 +68,7 @@ enum SupportedClasses {
 enum FloorStairsType {
   stairs('simple'),
   fireEscape('fire_escape'),
-  esquator('escalator'),
+  escalator('escalator'),
   elevator('elevator');
 
   final String type;

@@ -4,8 +4,10 @@ import 'package:xml/xml.dart';
 
 class SvgMap extends StatefulWidget {
   final String svgContent;
+  final bool unvisiblePoints;
   const SvgMap(
     this.svgContent, {
+    this.unvisiblePoints = false,
     super.key,
   });
 
@@ -35,15 +37,13 @@ class _SvgMapState extends State<SvgMap> {
 
     // Запускаем удаление
     removeElementsWithPoint(svg);
-
     return document.toXmlString(pretty: true);
   }
 
   @override
   Widget build(final BuildContext context) => Center(
         child: SvgPicture.string(
-          // cleanPointFromMap(),
-          widget.svgContent,
+          widget.unvisiblePoints ? cleanPointFromMap() : widget.svgContent,
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
         ),

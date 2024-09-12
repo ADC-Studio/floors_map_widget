@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:floors_map_widget/src/core/parser/path_instruction.dart';
 import 'package:xml/xml.dart' as xml;
+import 'package:xml/xml.dart';
 
 class SvgParser {
   final String svgContent;
@@ -198,67 +199,131 @@ class SvgParser {
   List<FloorPoint> getPoints() {
     final List<FloorPoint> pointList = [];
 
-    final pointElements = document.findAllElements('circle').toList();
-    final pathElements = document.findAllElements('path').toList();
-    final combinedElements = pointElements + pathElements;
+    // Рекурсивная функция для обхода элементов
+    void traverseElements(final XmlElement element) {
+      if (element.name.local == 'circle' || element.name.local == 'path') {
+        final String fullKey = (element.getAttribute('id') ?? '').trim();
+        print(fullKey);
+        if (!fullKey.contains('-') ||
+            !fullKey.contains('=') ||
+            !fullKey.contains('point')) {
+          return;
+        }
 
-    for (final pointElement in combinedElements) {
-      final String fullKey = (pointElement.getAttribute('id') ?? '').trim();
+        late final String x;
+        late final String y;
 
-      if (!fullKey.contains('-') ||
-          !fullKey.contains('=') ||
-          !fullKey.contains('point')) {
-        continue;
+        if (element.name.local == 'circle') {
+          x = (element.getAttribute('cx') ?? '').trim();
+          y = (element.getAttribute('cy') ?? '').trim();
+        } else {
+          final coords =
+              getCoordinatesFromPath(element.getAttribute('d') ?? '');
+          x = coords['x'] ?? '';
+          y = coords['y'] ?? '';
+        }
+
+        final List<String> parts = fullKey.split('=');
+        final String keyMainType = parts[0].split('-')[0];
+        final int keyId = int.parse(parts[0].split('-')[1]);
+        final List<int> neighbours =
+            parts[1].split('-').map(int.parse).toList();
+
+        if (!keyMainType.toLowerCase().trim().contains('point')) {
+          return;
+        }
+
+        pointList.add(
+          FloorPoint(
+            id: keyId,
+            floor: floorNumber!,
+            x: double.parse(x),
+            y: double.parse(y),
+            neighbours: neighbours,
+            sizeParentSvg: svgSize,
+          ),
+        );
       }
 
-      late final String x;
-      late final String y;
+      // Рекурсивный вызов для всех дочерних элементов
+      element.children.whereType<XmlElement>().forEach(traverseElements);
+    }
 
-      if (pointElement.localName == 'circle') {
-        x = (pointElement.getAttribute('cx') ?? '').trim();
-        y = (pointElement.getAttribute('cy') ?? '').trim();
-      } else {
-        final coords =
-            getCoordinatesFromPath(pointElement.getAttribute('d') ?? '');
-        x = coords['x'] ?? '';
-        y = coords['y'] ?? '';
-      }
+    // Начинаем обход с корневого элемента документа
+    traverseElements(document.rootElement);
 
-      final List<String> parts = fullKey.split('=');
-      final String keyMainType = parts[0].split('-')[0];
-      // There may be a mistake here
-      final int keyId = int.parse(parts[0].split('-')[1]);
-      final List<int> neighbours = parts[1].split('-').map(int.parse).toList();
-
-      if (!keyMainType.toLowerCase().trim().contains('point')) {
-        continue;
-      }
-
-      pointList.add(
-        FloorPoint(
-          id: keyId,
-          floor: floorNumber!,
-          x: double.parse(x),
-          y: double.parse(y),
-          neighbours: neighbours,
-          sizeParentSvg: svgSize,
-        ),
-      );
+    if (pointList.isEmpty) {
+      throw FloorParserSvgException('This map has no route anchor points');
     }
     return pointList;
   }
 
+  // List<FloorPoint> getPoints() {
+  //   final List<FloorPoint> pointList = [];
+
+  //   final pointElements = document.findAllElements('circle').toList();
+  //   final pathElements = document.findAllElements('path').toList();
+  //   final combinedElements = pointElements + pathElements;
+
+  //   for (final pointElement in combinedElements) {
+  //     final String fullKey = (pointElement.getAttribute('id') ?? '').trim();
+
+  //     if (!fullKey.contains('-') ||
+  //         !fullKey.contains('=') ||
+  //         !fullKey.contains('point')) {
+  //       continue;
+  //     }
+
+  //     late final String x;
+  //     late final String y;
+
+  //     if (pointElement.localName == 'circle') {
+  //       x = (pointElement.getAttribute('cx') ?? '').trim();
+  //       y = (pointElement.getAttribute('cy') ?? '').trim();
+  //     } else {
+  //       final coords =
+  //           getCoordinatesFromPath(pointElement.getAttribute('d') ?? '');
+  //       x = coords['x'] ?? '';
+  //       y = coords['y'] ?? '';
+  //     }
+
+  //     final List<String> parts = fullKey.split('=');
+  //     final String keyMainType = parts[0].split('-')[0];
+  //     // There may be a mistake here
+  //     final int keyId = int.parse(parts[0].split('-')[1]);
+  //     final List<int> neighbours = parts[1].split('-').map(int.parse).toList();
+
+  //     if (!keyMainType.toLowerCase().trim().contains('point')) {
+  //       continue;
+  //     }
+
+  //     pointList.add(
+  //       FloorPoint(
+  //         id: keyId,
+  //         floor: floorNumber!,
+  //         x: double.parse(x),
+  //         y: double.parse(y),
+  //         neighbours: neighbours,
+  //         sizeParentSvg: svgSize,
+  //       ),
+  //     );
+  //   }
+  //   return pointList;
+  // }
+
   List<FloorItem> getItems() {
     final List<FloorItem> floorItems = [];
 
-    final itemElements = document.findAllElements('path');
+    // Рекурсивный метод для обработки всех элементов
+    void processElement(final XmlElement element) {
+      // Проверяем текущий элемент
+      final String fullKey = (element.getAttribute('id') ?? '').trim();
 
-    // TODO: добавить проверку под элементов
-    for (final itemElement in itemElements) {
-      final String fullKey = (itemElement.getAttribute('id') ?? '').trim();
-
-      if (!fullKey.contains('-') || !fullKey.contains('=')) {
-        continue;
+      if (!fullKey.contains('-') ||
+          !fullKey.contains('=') ||
+          element.name.local != 'path') {
+        element.children.whereType<XmlElement>().forEach(processElement);
+        return;
       }
 
       final List<String> mainParts = fullKey.split('=');
@@ -266,7 +331,8 @@ class SvgParser {
       final String keyMainType = partsWithoutPoint[0];
 
       if (keyMainType == 'point') {
-        continue;
+        element.children.whereType<XmlElement>().forEach(processElement);
+        return;
       }
 
       late final int keyId;
@@ -283,7 +349,7 @@ class SvgParser {
       }
 
       if (!SupportedClasses.regexpCheckSupported.hasMatch(keyMainType)) {
-        continue;
+        return;
       }
 
       switch (SupportedClasses.fromString(keyMainType)) {
@@ -370,7 +436,26 @@ class SvgParser {
             'Not found: ${SupportedClasses.fromString(keyMainType)}',
           );
       }
+
+      // Рекурсивно обрабатываем все дочерние элементы
+      element.children.whereType<XmlElement>().forEach(processElement);
     }
+
+    // // Начинаем обработку с корневых элементов
+    // document.rootElement.children
+    //     .whereType<XmlElement>()
+    //     .toList()
+    //     .forEach(processElement);
+
+    // Начинаем обработку с корневых элементов
+
+    processElement(document.rootElement);
+
+    if (floorItems.isEmpty) {
+      throw FloorParserSvgException('This map has no any elements '
+          '(stores, stairs, toilet) Example store-1=3');
+    }
+
     return floorItems;
   }
 }

@@ -3,13 +3,17 @@ import 'package:flutter/material.dart';
 
 class FloorMapWidget extends StatefulWidget {
   final FloorItem item;
-  final VoidCallback? onTap;
+  final Future<void> Function()? onTap;
   final Duration duration;
+  final bool isActiveColor;
+  final Color? selectedColor;
 
   const FloorMapWidget({
     required this.item,
     this.onTap,
     this.duration = const Duration(milliseconds: 50),
+    this.isActiveColor = false,
+    this.selectedColor,
     super.key,
   });
 
@@ -20,7 +24,7 @@ class FloorMapWidget extends StatefulWidget {
 class _FloorMapWidgetState extends State<FloorMapWidget>
     with SingleTickerProviderStateMixin {
   bool _isInsideShape = false;
-  bool _isAnimating = false;
+  // bool _isAnimating = false;
   late AnimationController _animationController;
   late Animation<Color?> _colorAnimation;
 
@@ -56,16 +60,22 @@ class _FloorMapWidgetState extends State<FloorMapWidget>
       vsync: this,
     );
 
-    _colorAnimation = ColorTween(begin: Colors.transparent, end: Colors.black26)
-        .animate(_animationController);
+    _colorAnimation = ColorTween(
+      begin: Colors.transparent,
+      end: widget.selectedColor ?? Colors.black26,
+    ).animate(_animationController);
 
-    _animationController.addStatusListener((final status) {
-      if (status == AnimationStatus.completed) {
-        _isAnimating = true;
-      } else if (status == AnimationStatus.dismissed) {
-        _isAnimating = false;
-      }
-    });
+    if (widget.isActiveColor) {
+      _animationController.forward();
+    }
+
+    // _animationController.addStatusListener((final status) {
+    //   if (status == AnimationStatus.completed) {
+    //     _isAnimating = true;
+    //   } else if (status == AnimationStatus.dismissed) {
+    //     _isAnimating = false;
+    //   }
+    // });
   }
 
   @override
@@ -79,48 +89,46 @@ class _FloorMapWidgetState extends State<FloorMapWidget>
         clipper: _ShapeClipper(_getPathWithOffset()),
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
-          // onPanDown: (final details) {
+          // onTapUp: (final details) {
           //   _isInsideShape =
           //       _getPathWithOffset().contains(details.localPosition);
           //   if (_isInsideShape) {
-          //     _animationController.forward();
+          //     //   if (_isAnimating) {
+          //     //     // If the animation is running, reverse it only if it's completed
+          //     //     _animationController.addStatusListener((status) {
+          //     //       if (status == AnimationStatus.completed) {
+          //     //         _animationController.reverse();
+          //     //       }
+          //     //     });
+          //     //   } else {
+          //     //     _animationController.reverse();
+          //     //   }
+
+          //     if (_animationController.isAnimating) {
+          //       // Delay the reverse call until the animation completes
+          //       Future.delayed(_animationController.duration!, () {
+          //         if (_animationController.status == AnimationStatus.forward) {
+          //           _animationController.reverse();
+          //         }
+          //       });
+          //     } else {
+          //       _animationController.reverse();
+          //     }
           //   }
           // },
-          onTapUp: (final details) {
-            _isInsideShape =
-                _getPathWithOffset().contains(details.localPosition);
-            if (_isInsideShape) {
-              //   if (_isAnimating) {
-              //     // If the animation is running, reverse it only if it's completed
-              //     _animationController.addStatusListener((status) {
-              //       if (status == AnimationStatus.completed) {
-              //         _animationController.reverse();
-              //       }
-              //     });
-              //   } else {
-              //     _animationController.reverse();
-              //   }
-
-              if (_animationController.isAnimating) {
-                // Delay the reverse call until the animation completes
-                Future.delayed(_animationController.duration!, () {
-                  if (_animationController.status == AnimationStatus.forward) {
-                    _animationController.reverse();
+          onTapDown: (widget.onTap == null)
+              ? null
+              : (final details) async {
+                  await _animationController.forward();
+                  if (widget.onTap != null) {
+                    await widget.onTap?.call();
                   }
-                });
-              } else {
-                _animationController.reverse();
-              }
-            }
-          },
-          onTapDown: (final details) {
-            widget.onTap?.call();
-            _isInsideShape =
-                _getPathWithOffset().contains(details.localPosition);
-            if (_isInsideShape && !_isAnimating) {
-              _animationController.forward();
-            }
-          },
+                  _isInsideShape =
+                      _getPathWithOffset().contains(details.localPosition);
+                  if (_isInsideShape) {
+                    await _animationController.reverse();
+                  }
+                },
           // onPanUpdate: (final details) {
           //   _isInsideShape =
           //       _getPathWithOffset().contains(details.localPosition);

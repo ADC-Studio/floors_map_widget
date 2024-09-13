@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -12,7 +14,53 @@ class FloorPathPainter extends StatefulWidget {
   State<FloorPathPainter> createState() => _FloorPathPainterState();
 }
 
-class _FloorPathPainterState extends State<FloorPathPainter> {
+class _FloorPathPainterState extends State<FloorPathPainter>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      duration: const Duration(seconds: 5), // Длительность анимации
+      vsync: this,
+    );
+
+    _animation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(
+          0,
+          0.7,
+        ), // Заполнение белой линии
+      ),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 1, end: 0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(
+          0.7,
+          1,
+          curve: Curves.easeOut,
+        ), // Исчезновение белой линии
+      ),
+    );
+
+    _controller.forward().then((final _) {
+      _controller.repeat(); // Повторение анимации после завершения
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   Path pathBuilder() {
     final Path path = Path()
       ..moveTo(widget.listPoints[0].x, widget.listPoints[0].y);
@@ -43,72 +91,63 @@ class _FloorPathPainterState extends State<FloorPathPainter> {
     return pathBuilder().transform(matrix4.storage);
   }
 
-  //! TODO Исправить
   @override
-  Widget build(final BuildContext context) => ClipPath(
-        clipper: _ShapeClipper(
-          _getPathWithOffset(),
-        ),
-        child: CustomPaint(
-          painter: _CustomPathPainter(
-            _getPathWithOffset(),
-            Colors.red,
+  Widget build(final BuildContext context) => IgnorePointer(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (final context, final child) => CustomPaint(
+            painter: _CustomPathPainter(
+              _getPathWithOffset(),
+              Colors.red,
+              _animation.value,
+              _fadeAnimation.value,
+            ),
+            child: Container(),
           ),
-          child: Container(),
         ),
       );
-}
-
-class RoutePainter extends CustomPainter {
-  final Path path;
-
-  RoutePainter(this.path);
-
-  @override
-  void paint(final Canvas canvas, final Size size) {
-    final Paint paint = Paint()
-      ..color = Colors.red
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(final CustomPainter oldDelegate) => true;
 }
 
 class _CustomPathPainter extends CustomPainter {
   final Path pathWithOffset;
   final Color color;
+  final double progress;
+  final double fadeProgress;
 
   _CustomPathPainter(
     this.pathWithOffset,
     this.color,
+    this.progress,
+    this.fadeProgress,
   );
 
   @override
   void paint(final Canvas canvas, final Size size) {
-    final paintFill = Paint()
+    final Paint paintFill = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
+      ..strokeWidth = 2.0;
 
+    // Рисуем красную линию
     canvas.drawPath(pathWithOffset, paintFill);
+
+    final Paint linePaint = Paint()
+      ..color = Colors.white.withOpacity(
+        0.5 * fadeProgress,
+      ) // Используем fadeProgress для управления прозрачностью
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    final PathMetrics pathMetrics = pathWithOffset.computeMetrics();
+    for (final PathMetric pathMetric in pathMetrics) {
+      final double length = pathMetric.length;
+      final double progressLength = length * progress;
+
+      final Path extractPath = pathMetric.extractPath(0, progressLength);
+      canvas.drawPath(extractPath, linePaint);
+    }
   }
 
   @override
   bool shouldRepaint(covariant final CustomPainter oldDelegate) => true;
-}
-
-class _ShapeClipper extends CustomClipper<Path> {
-  final Path path;
-
-  _ShapeClipper(this.path);
-
-  @override
-  Path getClip(final Size size) => path;
-
-  @override
-  bool shouldReclip(final CustomClipper<Path> oldClipper) => oldClipper != this;
 }

@@ -28,9 +28,9 @@ class FloorMapWidget extends StatefulWidget {
 class _FloorMapWidgetState extends State<FloorMapWidget>
     with TickerProviderStateMixin {
   bool _isInsideShape = false;
-  // bool _isAnimating = false;
   late AnimationController _animationController;
   late Animation<Color?> _colorAnimation;
+  Offset? _tapPosition;
 
   Path _getPathWithOffset() {
     final size = MediaQuery.of(context).size;
@@ -60,13 +60,6 @@ class _FloorMapWidgetState extends State<FloorMapWidget>
   void initState() {
     super.initState();
     _initializeAnimation();
-    // _animationController.addStatusListener((final status) {
-    //   if (status == AnimationStatus.completed) {
-    //     _isAnimating = true;
-    //   } else if (status == AnimationStatus.dismissed) {
-    //     _isAnimating = false;
-    //   }
-    // });
   }
 
   void _initializeAnimation() {
@@ -112,59 +105,20 @@ class _FloorMapWidgetState extends State<FloorMapWidget>
         clipper: _ShapeClipper(_getPathWithOffset()),
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
-          // onTapUp: (final details) {
-          //   _isInsideShape =
-          //       _getPathWithOffset().contains(details.localPosition);
-          //   if (_isInsideShape) {
-          //     //   if (_isAnimating) {
-          //     //     // If the animation is running, reverse it only if it's completed
-          //     //     _animationController.addStatusListener((status) {
-          //     //       if (status == AnimationStatus.completed) {
-          //     //         _animationController.reverse();
-          //     //       }
-          //     //     });
-          //     //   } else {
-          //     //     _animationController.reverse();
-          //     //   }
-
-          //     if (_animationController.isAnimating) {
-          //       // Delay the reverse call until the animation completes
-          //       Future.delayed(_animationController.duration!, () {
-          //         if (_animationController.status == AnimationStatus.forward) {
-          //           _animationController.reverse();
-          //         }
-          //       });
-          //     } else {
-          //       _animationController.reverse();
-          //     }
-          //   }
-          // },
           onTapDown: (widget.onTap == null)
               ? null
-              : (final details) async {
-                  unawaited(_animationController.forward());
-                  if (widget.onTap != null) {
-                    await widget.onTap?.call();
-                  }
-                  _isInsideShape =
-                      _getPathWithOffset().contains(details.localPosition);
-                  if (_isInsideShape) {
-                    await _animationController.reverse();
-                  }
-                },
-          // onPanUpdate: (final details) {
-          //   _isInsideShape =
-          //       _getPathWithOffset().contains(details.localPosition);
-          //   if (!_isInsideShape) {
-          //     _animationController.reverse();
-          //   }
-          // },
-          // onPanEnd: (final _) {
-          //   if (_isInsideShape) {
-          //     widget.onTap?.call();
-          //     _animationController.reverse();
-          //   }
-          // },
+              : (final details) => _tapPosition = details.localPosition,
+          onTap: () async {
+            unawaited(_animationController.forward());
+            if (widget.onTap != null) {
+              await widget.onTap?.call();
+            }
+            _isInsideShape = _tapPosition != null &&
+                _getPathWithOffset().contains(_tapPosition!);
+            if (_isInsideShape) {
+              await _animationController.reverse();
+            }
+          },
           child: AnimatedBuilder(
             animation: _animationController,
             builder: (final context, final child) => CustomPaint(

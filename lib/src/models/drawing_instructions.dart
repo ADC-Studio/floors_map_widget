@@ -3,27 +3,27 @@
 import 'dart:ui';
 
 /*
-fill: Определяет цвет или градиент, который будет использоваться для заливки внутренней области фигуры. Например, fill="#A04D87" задает цвет заливки как розоватый.
+fill: Defines the color or gradient to be used for filling the interior of a shape. For example, fill="#A04D87" sets the fill color to a pinkish hue.
 
-stroke: Определяет цвет, используемый для обводки линии или границы фигуры. Например, stroke="black" задает черный цвет обводки.
+stroke: Defines the color used for the outline or border of a shape. For example, stroke="black" sets the stroke color to black.
 
-stroke-width: Определяет толщину обводки. Например, stroke-width="2" задает толщину обводки в 2 пикселя.
+stroke-width: Defines the thickness of the stroke. For example, stroke-width="2" sets the stroke thickness to 2 pixels.
 
-stroke-linecap: Определяет форму концов линий. Значения могут быть butt (плоские концы), round (округлые концы) или square (с квадратными концами).
+stroke-linecap: Defines the shape of the ends of lines. Values can be butt (flat ends), round (rounded ends), or square (square ends).
 
-stroke-linejoin: Определяет форму углов, где линии соединяются. Значения могут быть miter (угловой стык), round (округлый стык) или bevel (срезанный стык).
+stroke-linejoin: Defines the shape of corners where lines join. Values can be miter (sharp corner), round (rounded corner), or bevel (beveled corner).
 
-opacity: Определяет прозрачность элемента. Значение варьируется от 0 (полностью прозрачный) до 1 (полностью непрозрачный).
+opacity: Defines the transparency of an element. The value ranges from 0 (completely transparent) to 1 (completely opaque).
 
-transform: Применяет преобразования, такие как масштабирование, вращение, смещение и наклон. Например, transform="rotate(45 50 50)" поворачивает элемент на 45 градусов вокруг точки (50, 50).
+transform: Applies transformations such as scaling, rotation, translation, and skewing. For example, transform="rotate(45 50 50)" rotates the element by 45 degrees around the point (50, 50).
 
-x и y: Определяют положение элемента относительно координатной системы. Например, x="10" и y="20" задают положение элемента на 10 единиц вправо и 20 единиц вниз от начала координат.
+x and y: Define the position of an element relative to the coordinate system. For example, x="10" and y="20" position the element 10 units to the right and 20 units down from the origin.
 
-width и height: Определяют размеры элемента, такие как ширина и высота. Эти атрибуты обычно используются для прямоугольников, изображений и других элементов с фиксированными размерами.
+width and height: Define the size of an element, such as width and height. These attributes are commonly used for rectangles, images, and other elements with fixed dimensions.
 
-viewBox: Определяет координатную систему и область видимости для элементов внутри контейнера SVG. Например, viewBox="0 0 100 100" устанавливает область видимости в координатах от (0,0) до (100,100).
+viewBox: Defines the coordinate system and the visible area for elements within the SVG container. For example, viewBox="0 0 100 100" sets the viewable area to coordinates from (0,0) to (100,100).
 
-class: Присваивает CSS класс элементу, позволяя применять стили.
+class: Assigns a CSS class to an element, allowing styles to be applied.
 */
 
 /// Parent class for all Drawing Instructions

@@ -4,10 +4,13 @@ import 'package:xml/xml.dart';
 
 class SvgMap extends StatefulWidget {
   final String svgContent;
-  final bool unvisiblePoints;
+  final bool hidePoints;
+  final Size? sizeMap;
+
   const SvgMap(
     this.svgContent, {
-    this.unvisiblePoints = false,
+    this.sizeMap,
+    this.hidePoints = false,
     super.key,
   });
 
@@ -16,36 +19,44 @@ class SvgMap extends StatefulWidget {
 }
 
 class _SvgMapState extends State<SvgMap> {
-  String cleanPointFromMap() {
+  late String svgContent;
+
+  @override
+  void initState() {
+    super.initState();
+    svgContent = widget.hidePoints ? cleanPointsFromMap() : widget.svgContent;
+  }
+
+  /// Removes elements with an 'id' containing 'point' from the SVG content.
+  String cleanPointsFromMap() {
     final document = XmlDocument.parse(widget.svgContent);
-    final svg = document.findElements('svg').first;
+    final regex = RegExp(r'\bpoint[-=]', caseSensitive: false);
+    // Find all elements whose 'id' attribute contains 'point'.
+    final elementsToRemove =
+        document.findAllElements('*').where((final element) {
+      final String? id = element.getAttribute('id');
+      return id != null && regex.hasMatch(id);
+    }).toList();
 
-    // Рекурсивная функция для удаления элементов с id, содержащим 'point'
-    void removeElementsWithPoint(final XmlElement element) {
-      // Удаляем все дочерние элементы, если их id содержит 'point'
-      element.children.removeWhere((final node) {
-        if (node is XmlElement) {
-          final id = node.getAttribute('id');
-          return id != null && id.contains('point');
-        }
-        return false;
-      });
-
-      // Рекурсивно обрабатываем дочерние элементы
-      element.children.whereType<XmlElement>().forEach(removeElementsWithPoint);
+    // Remove each element from its parent.
+    for (final element in elementsToRemove) {
+      element.parent?.children.remove(element);
     }
 
-    // Запускаем удаление
-    removeElementsWithPoint(svg);
     return document.toXmlString(pretty: true);
   }
 
   @override
-  Widget build(final BuildContext context) => Center(
-        child: SvgPicture.string(
-          widget.unvisiblePoints ? cleanPointFromMap() : widget.svgContent,
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height,
-        ),
-      );
+  Widget build(final BuildContext context) {
+    final svgContent =
+        widget.hidePoints ? cleanPointsFromMap() : widget.svgContent;
+
+    return Center(
+      child: SvgPicture.string(
+        svgContent,
+        width: widget.sizeMap?.width,
+        height: widget.sizeMap?.height,
+      ),
+    );
+  }
 }

@@ -203,7 +203,6 @@ class SvgParser {
     void traverseElements(final XmlElement element) {
       if (element.name.local == 'circle' || element.name.local == 'path') {
         final String fullKey = (element.getAttribute('id') ?? '').trim();
-        print(fullKey);
         if (!fullKey.contains('-') ||
             !fullKey.contains('=') ||
             !fullKey.contains('point')) {
@@ -257,59 +256,6 @@ class SvgParser {
     }
     return pointList;
   }
-
-  // List<FloorPoint> getPoints() {
-  //   final List<FloorPoint> pointList = [];
-
-  //   final pointElements = document.findAllElements('circle').toList();
-  //   final pathElements = document.findAllElements('path').toList();
-  //   final combinedElements = pointElements + pathElements;
-
-  //   for (final pointElement in combinedElements) {
-  //     final String fullKey = (pointElement.getAttribute('id') ?? '').trim();
-
-  //     if (!fullKey.contains('-') ||
-  //         !fullKey.contains('=') ||
-  //         !fullKey.contains('point')) {
-  //       continue;
-  //     }
-
-  //     late final String x;
-  //     late final String y;
-
-  //     if (pointElement.localName == 'circle') {
-  //       x = (pointElement.getAttribute('cx') ?? '').trim();
-  //       y = (pointElement.getAttribute('cy') ?? '').trim();
-  //     } else {
-  //       final coords =
-  //           getCoordinatesFromPath(pointElement.getAttribute('d') ?? '');
-  //       x = coords['x'] ?? '';
-  //       y = coords['y'] ?? '';
-  //     }
-
-  //     final List<String> parts = fullKey.split('=');
-  //     final String keyMainType = parts[0].split('-')[0];
-  //     // There may be a mistake here
-  //     final int keyId = int.parse(parts[0].split('-')[1]);
-  //     final List<int> neighbours = parts[1].split('-').map(int.parse).toList();
-
-  //     if (!keyMainType.toLowerCase().trim().contains('point')) {
-  //       continue;
-  //     }
-
-  //     pointList.add(
-  //       FloorPoint(
-  //         id: keyId,
-  //         floor: floorNumber!,
-  //         x: double.parse(x),
-  //         y: double.parse(y),
-  //         neighbours: neighbours,
-  //         sizeParentSvg: svgSize,
-  //       ),
-  //     );
-  //   }
-  //   return pointList;
-  // }
 
   List<FloorItem> getItems() {
     final List<FloorItem> floorItems = [];
@@ -411,7 +357,7 @@ class SvgParser {
                 // colorStroke: getColorStroke(fullKey),
               ),
               floor: floorNumber!,
-              type: FloorHygieneZoneType.fromString(partsWithoutPoint[1]),
+              subType: FloorHygieneZoneType.fromString(partsWithoutPoint[1]),
             ),
           );
         case SupportedClasses.stairs:
@@ -427,7 +373,7 @@ class SvgParser {
                 // colorStroke: getColorStroke(fullKey),
               ),
               floor: floorNumber!,
-              type: FloorStairsType.fromString(partsWithoutPoint[1]),
+              subType: FloorStairsType.fromString(partsWithoutPoint[1]),
             ),
           );
         // ignore: no_default_cases

@@ -1,23 +1,20 @@
-import 'dart:async';
-
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:flutter/material.dart';
 
 class FloorMapWidget extends StatefulWidget {
-  final FloorItem item;
-  final Future<void> Function()? onTap;
-  final Duration duration;
-  final Duration durationBlink;
-  final bool isActiveBlinking;
-  final Color? selectedColor;
+  final String svgContent;
+  final List<FloorItemWidget> listItemsWidgets;
+  final bool unvisiblePoints;
+  final int? startIdPoint;
+  final int? endIdPoint;
 
-  const FloorMapWidget({
-    required this.item,
-    this.onTap,
-    this.duration = const Duration(milliseconds: 50),
-    this.durationBlink = const Duration(seconds: 1),
-    this.isActiveBlinking = false,
-    this.selectedColor,
+  /// A widget that displays an SVG map with interactive floor items.
+  const FloorMapWidget(
+    this.svgContent,
+    this.listItemsWidgets, {
+    this.unvisiblePoints = false,
+    this.startIdPoint,
+    this.endIdPoint,
     super.key,
   });
 
@@ -25,144 +22,54 @@ class FloorMapWidget extends StatefulWidget {
   State<FloorMapWidget> createState() => _FloorMapWidgetState();
 }
 
-class _FloorMapWidgetState extends State<FloorMapWidget>
-    with TickerProviderStateMixin {
-  bool _isInsideShape = false;
-  late AnimationController _animationController;
-  late Animation<Color?> _colorAnimation;
-  Offset? _tapPosition;
-
-  Path _getPathWithOffset() {
-    final size = MediaQuery.of(context).size;
-    final double scale =
-        (size.width / widget.item.drawingInstructions.sizeParentSvg.width)
-            .clamp(
-      0,
-      size.height / widget.item.drawingInstructions.sizeParentSvg.height,
-    );
-
-    final offsetX = (size.width -
-            widget.item.drawingInstructions.sizeParentSvg.width * scale) /
-        2;
-    final offsetY = (size.height -
-            widget.item.drawingInstructions.sizeParentSvg.height * scale) /
-        2;
-
-    final matrix4 = Matrix4.identity()
-      ..translate(offsetX, offsetY)
-      ..scale(scale, scale, 1);
-
-    return widget.item.drawingInstructions.clickableArea
-        .transform(matrix4.storage);
-  }
+class _FloorMapWidgetState extends State<FloorMapWidget> {
+  /// Navigation points in the map.
+  late List<FloorPoint> listPoints;
 
   @override
   void initState() {
-    super.initState();
-    _initializeAnimation();
-  }
-
-  void _initializeAnimation() {
-    _animationController = AnimationController(
-      duration:
-          widget.isActiveBlinking ? widget.durationBlink : widget.duration,
-      vsync: this,
-    );
-
-    _colorAnimation = ColorTween(
-      begin: Colors.transparent,
-      end: widget.selectedColor ?? Colors.black26,
-    ).animate(_animationController);
-
-    if (widget.isActiveBlinking) {
-      _animationController.repeat(reverse: true);
-    }
+    super.initState(); // Call super.initState() first
+    final parser = SvgParser(svgContent: widget.svgContent);
+    listPoints = parser.getPoints();
   }
 
   @override
-  void didUpdateWidget(covariant final FloorMapWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (widget.isActiveBlinking != oldWidget.isActiveBlinking ||
-        widget.durationBlink != oldWidget.durationBlink ||
-        widget.selectedColor != oldWidget.selectedColor) {
-      if (_animationController.isAnimating) {
-        _animationController.stop();
-      }
-      _animationController.dispose();
-      _initializeAnimation();
-    }
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(final BuildContext context) => ClipPath(
-        clipper: _ShapeClipper(_getPathWithOffset()),
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTapDown: (widget.onTap == null)
-              ? null
-              : (final details) => _tapPosition = details.localPosition,
-          onTap: () async {
-            unawaited(_animationController.forward());
-            if (widget.onTap != null) {
-              await widget.onTap?.call();
-            }
-            _isInsideShape = _tapPosition != null &&
-                _getPathWithOffset().contains(_tapPosition!);
-            if (_isInsideShape) {
-              await _animationController.reverse();
-            }
-          },
-          child: AnimatedBuilder(
-            animation: _animationController,
-            builder: (final context, final child) => CustomPaint(
-              painter: _CustomShapePainter(
-                _getPathWithOffset(),
-                _colorAnimation.value ?? Colors.transparent,
+  Widget build(final BuildContext context) => RepaintBoundary(
+        child: LayoutBuilder(
+          builder: (final context, final constraints) => Stack(
+            children: [
+              SvgMap(
+                widget.svgContent,
+                sizeMap: Size(
+                  constraints.maxWidth,
+                  constraints.maxHeight,
+                ),
+                hidePoints: widget.unvisiblePoints,
               ),
-              child: Container(),
-            ),
+              ...widget.listItemsWidgets.map(
+                (final item) => item.parentSize == null
+                    ? item.copyWith(
+                        parentSize: Size(
+                          constraints.maxWidth,
+                          constraints.maxHeight,
+                        ),
+                      )
+                    : item,
+              ),
+              if (widget.startIdPoint != null && widget.endIdPoint != null)
+                FloorPathPainter(
+                  PathBuilder(
+                    startId: widget.startIdPoint!,
+                    endId: widget.endIdPoint!,
+                    coords: listPoints,
+                  ).findShortestPath()['points'] as List<FloorPoint>,
+                  Size(
+                    constraints.maxWidth,
+                    constraints.maxHeight,
+                  ),
+                ),
+            ],
           ),
         ),
       );
-}
-
-class _CustomShapePainter extends CustomPainter {
-  final Path pathWithOffset;
-  final Color color;
-
-  _CustomShapePainter(
-    this.pathWithOffset,
-    this.color,
-  );
-
-  @override
-  void paint(final Canvas canvas, final Size size) {
-    final paintFill = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    canvas.drawPath(pathWithOffset, paintFill);
-  }
-
-  @override
-  bool shouldRepaint(covariant final CustomPainter oldDelegate) => true;
-}
-
-class _ShapeClipper extends CustomClipper<Path> {
-  final Path path;
-
-  _ShapeClipper(this.path);
-
-  @override
-  Path getClip(final Size size) => path;
-
-  @override
-  bool shouldReclip(final CustomClipper<Path> oldClipper) => oldClipper != this;
 }

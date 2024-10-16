@@ -171,7 +171,7 @@ linter:
     void_checks: true
     always_put_control_body_on_new_line: true
     avoid_annotating_with_dynamic: true
-    avoid_classes_with_only_static_members: true
+    avoid_classes_with_only_static_members: false
     avoid_multiple_declarations_per_line: true
     avoid_relative_lib_imports: true
     avoid_web_libraries_in_flutter: true

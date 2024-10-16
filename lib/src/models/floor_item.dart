@@ -19,12 +19,15 @@ abstract class FloorItem {
   /// Id negbour point
   final int? idPoint;
 
+  final FloorSubTypes? subType;
+
   const FloorItem({
     required this.key,
     required this.drawingInstructions,
     required this.floor,
     this.icon,
     this.idPoint,
+    this.subType,
   });
 
   @override
@@ -37,7 +40,8 @@ abstract class FloorItem {
         other.key == key &&
         other.drawingInstructions == drawingInstructions &&
         other.floor == floor &&
-        other.icon == icon;
+        other.icon == icon &&
+        other.subType == subType;
   }
 
   @override
@@ -45,7 +49,8 @@ abstract class FloorItem {
       key.hashCode ^
       drawingInstructions.hashCode ^
       floor.hashCode ^
-      icon.hashCode;
+      icon.hashCode ^
+      subType.hashCode;
 
   @override
   String toString() => 'FloorItem(key: $key, drawingInstructions: '

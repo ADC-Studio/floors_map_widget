@@ -1,6 +1,8 @@
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:flutter/material.dart';
 
+abstract class FloorSubTypes {}
+
 /// SupportedClasses in floor_map
 enum SupportedClasses {
   shop('shop'),
@@ -65,7 +67,7 @@ enum SupportedClasses {
   );
 }
 
-enum FloorStairsType {
+enum FloorStairsType implements FloorSubTypes {
   stairs('simple'),
   fireEscape('fire_escape'),
   escalator('escalator'),
@@ -86,7 +88,7 @@ enum FloorStairsType {
   }
 }
 
-enum FloorHygieneZoneType {
+enum FloorHygieneZoneType implements FloorSubTypes {
   maleRoom('male'),
   femaleRoom('female'),
   motherAndChildRoom('mother_and_child');

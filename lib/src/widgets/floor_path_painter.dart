@@ -1,12 +1,19 @@
+import 'dart:math' as math;
 import 'dart:ui';
-
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:flutter/material.dart';
 
 class FloorPathPainter extends StatefulWidget {
   final List<FloorPoint> listPoints;
+
+  /// Parent size
+  final Size parentSize;
+
+  /// Creates a [FloorPathPainter] widget that animates
+  /// a path along given points.
   const FloorPathPainter(
-    this.listPoints, {
+    this.listPoints,
+    this.parentSize, {
     super.key,
   });
 
@@ -17,41 +24,45 @@ class FloorPathPainter extends StatefulWidget {
 class _FloorPathPainterState extends State<FloorPathPainter>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _animation;
+  late Animation<double> _progressAnimation;
   late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
 
+    // Initialize the animation controller with a duration of 5 seconds.
     _controller = AnimationController(
-      duration: const Duration(seconds: 5), // Длительность анимации
+      duration: const Duration(seconds: 5),
       vsync: this,
     );
 
-    _animation = Tween<double>(begin: 0, end: 1).animate(
+    // Animation that controls the progress of the white line along the path.
+    _progressAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(
           0,
-          0.7,
-        ), // Заполнение белой линии
+          0.7, // First 70% of the animation time.
+        ),
       ),
     );
 
+    // Animation that controls the fade-out effect of the white line.
     _fadeAnimation = Tween<double>(begin: 1, end: 0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(
           0.7,
-          1,
+          1, // Last 30% of the animation time.
           curve: Curves.easeOut,
-        ), // Исчезновение белой линии
+        ),
       ),
     );
 
+    // Start the animation and repeat it indefinitely.
     _controller.forward().then((final _) {
-      _controller.repeat(); // Повторение анимации после завершения
+      _controller.repeat();
     });
   }
 
@@ -61,7 +72,8 @@ class _FloorPathPainterState extends State<FloorPathPainter>
     super.dispose();
   }
 
-  Path pathBuilder() {
+  /// Builds the path from the list of points.
+  Path _buildPath() {
     final Path path = Path()
       ..moveTo(widget.listPoints[0].x, widget.listPoints[0].y);
 
@@ -71,24 +83,30 @@ class _FloorPathPainterState extends State<FloorPathPainter>
     return path;
   }
 
+  /// Transforms the path to fit within the current context size,
+  ///  maintaining aspect ratio.
   Path _getPathWithOffset() {
-    final size = MediaQuery.of(context).size;
-    final double scale =
-        (size.width / widget.listPoints[0].sizeParentSvg.width).clamp(
-      0,
-      size.height / widget.listPoints[0].sizeParentSvg.height,
+    final size = widget.parentSize;
+    final svgSize = widget.listPoints[0].sizeParentSvg;
+
+    // Calculate the scale to fit the path within the screen while
+    // maintaining aspect ratio.
+    final double scale = math.min(
+      size.width / svgSize.width,
+      size.height / svgSize.height,
     );
 
-    final offsetX =
-        (size.width - widget.listPoints[0].sizeParentSvg.width * scale) / 2;
-    final offsetY =
-        (size.height - widget.listPoints[0].sizeParentSvg.height * scale) / 2;
+    // Calculate the offsets to center the path.
+    final offsetX = (size.width - svgSize.width * scale) / 2;
+    final offsetY = (size.height - svgSize.height * scale) / 2;
 
+    // Create a transformation matrix.
     final matrix4 = Matrix4.identity()
       ..translate(offsetX, offsetY)
-      ..scale(scale, scale, 1);
+      ..scale(scale, scale);
 
-    return pathBuilder().transform(matrix4.storage);
+    // Apply the transformation to the path.
+    return _buildPath().transform(matrix4.storage);
   }
 
   @override
@@ -97,12 +115,12 @@ class _FloorPathPainterState extends State<FloorPathPainter>
           animation: _controller,
           builder: (final context, final child) => CustomPaint(
             painter: _CustomPathPainter(
-              _getPathWithOffset(),
-              Colors.red,
-              _animation.value,
-              _fadeAnimation.value,
+              pathWithOffset: _getPathWithOffset(),
+              color: Colors.red,
+              progress: _progressAnimation.value,
+              fadeProgress: _fadeAnimation.value,
             ),
-            child: Container(),
+            child: const SizedBox.expand(),
           ),
         ),
       );
@@ -114,12 +132,12 @@ class _CustomPathPainter extends CustomPainter {
   final double progress;
   final double fadeProgress;
 
-  _CustomPathPainter(
-    this.pathWithOffset,
-    this.color,
-    this.progress,
-    this.fadeProgress,
-  );
+  _CustomPathPainter({
+    required this.pathWithOffset,
+    required this.color,
+    required this.progress,
+    required this.fadeProgress,
+  });
 
   @override
   void paint(final Canvas canvas, final Size size) {
@@ -128,16 +146,15 @@ class _CustomPathPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
-    // Рисуем красную линию
+    // Draw the red path line.
     canvas.drawPath(pathWithOffset, paintFill);
 
     final Paint linePaint = Paint()
-      ..color = Colors.white.withOpacity(
-        0.5 * fadeProgress,
-      ) // Используем fadeProgress для управления прозрачностью
+      ..color = Colors.white.withOpacity(0.5 * fadeProgress)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
+    // Animate the white line along the path.
     final PathMetrics pathMetrics = pathWithOffset.computeMetrics();
     for (final PathMetric pathMetric in pathMetrics) {
       final double length = pathMetric.length;
@@ -149,5 +166,9 @@ class _CustomPathPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant final CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant final _CustomPathPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.fadeProgress != fadeProgress ||
+      oldDelegate.pathWithOffset != pathWithOffset ||
+      oldDelegate.color != color;
 }

@@ -12,6 +12,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.0.10+1
   xml: ^6.5.0
+  web: ^1.1.0
   floors_map_widget: 
     path: '../.'
 
@@ -23,4 +24,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/example.svg
+    - assets/map_with_points_example.svg

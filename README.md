@@ -143,7 +143,7 @@ FloorItemWidget(
 To add interactive objects to the map, you need to initialize them with the FloorItemWidget and pass them as a list to FloorItemWidget.
 
 ```Dart
-FloorItemWidget(
+FloorMapWidget(
     // FloorItem
     item: element,
     // Function (FloorItem)
@@ -168,10 +168,23 @@ final listPoints = parser.getPoints();
 final listItems = parser.getItems();
 ```
 
-For more information, visit the Example with prepared code and map.
+For more information, visit the Example with prepared code and map [example](/example/README.md).
 
 ![Example](https://private-user-images.githubusercontent.com/55548743/377865034-1f945a9a-dd47-4941-a6ad-80647f592bbf.gif?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjkyNTQ2NTEsIm5iZiI6MTcyOTI1NDM1MSwicGF0aCI6Ii81NTU0ODc0My8zNzc4NjUwMzQtMWY5NDVhOWEtZGQ0Ny00OTQxLWE2YWQtODA2NDdmNTkyYmJmLmdpZj9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDEwMTglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQxMDE4VDEyMjU1MVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWQzNDZhMTc5NzhhNjI0YzdhMTk0M2Y0YzAyNTUzYjY4Y2QzNTMzODUyNGY3YzBhY2Q2MTk3OTc0NWM2YmI4ZTEmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.UNJD2GwBmO8sbk7DGQqNETzDjL7EpKVy9SYAPLgLMME)
 
 ## How to Contribute
 
 To get started, read [CONTRIBUTING.md](CONTRIBUTING.md) to learn about the guidelines within this project.
+
+## Changelog
+
+[Refer to the Changelog to get all release notes.](/CHANGELOG.md)
+
+## Maintainers
+
+[ADC STUDIO](https://adc-web.ru)
+
+[Valerij Shishov](https://github.com/MixKage) |
+[Arthur Lokhov](https://github.com/i4ox)
+
+This library is open for issues and pull requests. If you have ideas for improvements or bugs, the repository is open to contributions!

@@ -125,10 +125,14 @@ class _SvgMapExampleState extends State<SvgMapExample> {
                     InteractiveViewer(
                       maxScale: 3,
                       child: FloorMapWidget(
+                        // String from SVG Map
                         _svgContent!,
+                        // Floors widgets
                         _listWidgets,
+                        // Use for build a route
                         startIdPoint: _startPointItem?.idPoint,
                         endIdPoint: _endPointItem?.idPoint,
+                        // Use for remove points from svg
                         unvisiblePoints: true,
                       ),
                     ),

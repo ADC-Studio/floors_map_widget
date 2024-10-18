@@ -127,7 +127,7 @@ stairs-elevator-1=2
 Add the library to your project and embed the ready widget containing the necessary parameters.
 
 ```Dart
-FloorItemWidget(
+FloorMapWidget(
     // String from SVG Map
     _svgContent,
     // Floors widgets
@@ -143,7 +143,7 @@ FloorItemWidget(
 To add interactive objects to the map, you need to initialize them with the FloorItemWidget and pass them as a list to FloorItemWidget.
 
 ```Dart
-FloorMapWidget(
+FloorItemWidget(
     // FloorItem
     item: element,
     // Function (FloorItem)

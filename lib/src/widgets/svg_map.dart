@@ -19,12 +19,12 @@ class SvgMap extends StatefulWidget {
 }
 
 class _SvgMapState extends State<SvgMap> {
-  late String svgContent;
+  late String _svgContent;
 
   @override
   void initState() {
     super.initState();
-    svgContent = widget.hidePoints ? cleanPointsFromMap() : widget.svgContent;
+    _svgContent = widget.hidePoints ? cleanPointsFromMap() : widget.svgContent;
   }
 
   /// Removes elements with an 'id' containing 'point' from the SVG content.
@@ -47,16 +47,11 @@ class _SvgMapState extends State<SvgMap> {
   }
 
   @override
-  Widget build(final BuildContext context) {
-    final svgContent =
-        widget.hidePoints ? cleanPointsFromMap() : widget.svgContent;
-
-    return Center(
-      child: SvgPicture.string(
-        svgContent,
-        width: widget.sizeMap?.width,
-        height: widget.sizeMap?.height,
-      ),
-    );
-  }
+  Widget build(final BuildContext context) => Center(
+        child: SvgPicture.string(
+          _svgContent,
+          width: widget.sizeMap?.width,
+          height: widget.sizeMap?.height,
+        ),
+      );
 }

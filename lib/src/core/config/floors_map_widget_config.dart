@@ -1,5 +1,5 @@
 class FloorsMapWidgetConfig {
   const FloorsMapWidgetConfig();
 
-  // TODO: WRITE CONFIG
+  // WILL WRITE CONFIG IN NEW VERSION
 }

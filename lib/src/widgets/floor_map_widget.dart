@@ -28,7 +28,7 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
 
   @override
   void initState() {
-    super.initState(); // Call super.initState() first
+    super.initState();
     final parser = FloorSvgParser(svgContent: widget.svgContent);
     listPoints = parser.getPoints();
   }
@@ -63,7 +63,7 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
                     endId: widget.endIdPoint!,
                     coords: listPoints,
                   ).findShortestPath()['points'] as List<FloorPoint>,
-                  Size(
+                  parentSize: Size(
                     constraints.maxWidth,
                     constraints.maxHeight,
                   ),

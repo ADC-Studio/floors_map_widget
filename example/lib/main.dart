@@ -80,7 +80,7 @@ class _SvgMapExampleState extends State<SvgMapExample> {
       final listWidgets = listItems
           .map(
             (final element) => FloorItemWidget(
-              item: element,
+              element,
               onTap: _handleFloorItemTap,
               // An example of how to change the color of an
               // interaction animation

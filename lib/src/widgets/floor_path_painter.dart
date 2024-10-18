@@ -6,14 +6,15 @@ import 'package:flutter/material.dart';
 class FloorPathPainter extends StatefulWidget {
   final List<FloorPoint> listPoints;
 
-  /// Parent size
-  final Size parentSize;
+  // The available space that the widget can occupy.
+  // Necessary for miscalculations
+  final Size? parentSize;
 
   /// Creates a [FloorPathPainter] widget that animates
   /// a path along given points.
   const FloorPathPainter(
-    this.listPoints,
-    this.parentSize, {
+    this.listPoints, {
+    this.parentSize,
     super.key,
   });
 
@@ -85,8 +86,8 @@ class _FloorPathPainterState extends State<FloorPathPainter>
 
   /// Transforms the path to fit within the current context size,
   ///  maintaining aspect ratio.
-  Path _getPathWithOffset() {
-    final size = widget.parentSize;
+  Path _getPathWithOffset(final BuildContext context) {
+    final size = widget.parentSize ?? MediaQuery.of(context).size;
     final svgSize = widget.listPoints[0].sizeParentSvg;
 
     // Calculate the scale to fit the path within the screen while
@@ -115,7 +116,7 @@ class _FloorPathPainterState extends State<FloorPathPainter>
           animation: _controller,
           builder: (final context, final child) => CustomPaint(
             painter: _CustomPathPainter(
-              pathWithOffset: _getPathWithOffset(),
+              pathWithOffset: _getPathWithOffset(context),
               color: Colors.red,
               progress: _progressAnimation.value,
               fadeProgress: _fadeAnimation.value,

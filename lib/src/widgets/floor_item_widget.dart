@@ -4,6 +4,11 @@ import 'dart:math' as math;
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:flutter/material.dart';
 
+/// The FloorItemWidget is a stateful widget that represents an interactive
+/// object on a floor map. It offers several features such as handling user
+/// interactions, animations, and visual effects for highlighting. It uses a
+/// combination of custom painting and clipping to render the floor item
+/// within a specific path.
 class FloorItemWidget extends StatefulWidget {
   /// An interactive object on the map.
   final FloorItem item;
@@ -27,8 +32,8 @@ class FloorItemWidget extends StatefulWidget {
   final Size? parentSize;
 
   /// Creates an interactive floor item widget.
-  const FloorItemWidget({
-    required this.item,
+  const FloorItemWidget(
+    this.item, {
     this.onTap,
     this.durationTapAnimation = const Duration(milliseconds: 50),
     this.durationBlink = const Duration(seconds: 1),
@@ -49,7 +54,7 @@ class FloorItemWidget extends StatefulWidget {
     final Size? parentSize,
   }) =>
       FloorItemWidget(
-        item: item ?? this.item,
+        item ?? this.item,
         onTap: onTap ?? this.onTap,
         durationTapAnimation: durationTapAnimation ?? this.durationTapAnimation,
         durationBlink: durationBlink ?? this.durationBlink,

@@ -5,7 +5,6 @@ FloorStairs getNearestStair(
   final Iterable<FloorStairs> stairs,
   final List<FloorPoint> coords,
 ) {
-  //! TODO: CHECK SUBTYPES
   final stairsWithoutFireExists =
       stairs.where((final el) => el.subType != FloorStairsType.fireEscape);
   double pathToNearestStair = double.infinity;
@@ -19,9 +18,5 @@ FloorStairs getNearestStair(
       nearestStairId = el.idPoint!;
     }
   }
-  return stairs.firstWhere((final el) {
-    // print(el.idPoint);
-    // print(nearestStairId);
-    return el.idPoint == nearestStairId;
-  });
+  return stairs.firstWhere((final el) => el.idPoint == nearestStairId);
 }

@@ -25,12 +25,18 @@ class FloorSvgParser {
   /// [floorNumber]: Optional floor number. If not provided,
   /// it will be extracted from the SVG.
   FloorSvgParser({required this.svgContent, this.floorNumber}) {
-    // Parse the SVG content into an XML document.
-    document = xml.XmlDocument.parse(svgContent);
-    // Extract the dimensions of the SVG.
-    svgSize = _getDimensions();
-    // If floorNumber is not provided, extract it from the SVG.
-    floorNumber = floorNumber ?? _getFloorNumber();
+    try {
+      // Parse the SVG content into an XML document.
+      document = xml.XmlDocument.parse(svgContent);
+      // Extract the dimensions of the SVG.
+      svgSize = _getDimensions();
+      // If floorNumber is not provided, extract it from the SVG.
+      floorNumber = floorNumber ?? _getFloorNumber();
+    } on FloorParserSvgException {
+      rethrow;
+    } on Exception catch (e) {
+      throw FloorParserSvgException(e.toString(), cause: e);
+    }
   }
 
   /// Converts a hexadecimal color string to a [Color] object.
@@ -361,7 +367,7 @@ class FloorSvgParser {
       final drawingInstructions = DrawingInstructions(
         clickableArea: getPaths(fullKey),
         sizeParentSvg: svgSize,
-        // TODO: Add colorFill and colorStroke configuration.
+        // Will add colorFill and colorStroke configuration in new versions.
         // colorFill: getColorFill(fullKey),
         // colorStroke: getColorStroke(fullKey),
       );

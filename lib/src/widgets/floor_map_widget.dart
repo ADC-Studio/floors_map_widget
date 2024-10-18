@@ -29,7 +29,7 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
   @override
   void initState() {
     super.initState(); // Call super.initState() first
-    final parser = SvgParser(svgContent: widget.svgContent);
+    final parser = FloorSvgParser(svgContent: widget.svgContent);
     listPoints = parser.getPoints();
   }
 

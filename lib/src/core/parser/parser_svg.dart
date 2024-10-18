@@ -5,13 +5,13 @@ import 'package:floors_map_widget/src/core/parser/path_instruction.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:xml/xml.dart';
 
-class SvgParser {
+class FloorSvgParser {
   final String svgContent;
   late Size svgSize;
   late int? floorNumber;
   late final xml.XmlDocument document;
 
-  SvgParser({required this.svgContent, this.floorNumber}) {
+  FloorSvgParser({required this.svgContent, this.floorNumber}) {
     document = xml.XmlDocument.parse(svgContent);
     svgSize = _getDimensions();
     floorNumber = floorNumber ?? _getFloorNumber();

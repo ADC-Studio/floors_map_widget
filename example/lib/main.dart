@@ -70,7 +70,7 @@ class _SvgMapExampleState extends State<SvgMapExample> {
       final svgContent =
           await rootBundle.loadString('assets/map_with_points_example.svg');
       // Parser initialization
-      final parser = SvgParser(svgContent: svgContent);
+      final parser = FloorSvgParser(svgContent: svgContent);
       // You can get anchor points from the map
       // ignore: unused_local_variable
       final listPoints = parser.getPoints();
@@ -121,6 +121,7 @@ class _SvgMapExampleState extends State<SvgMapExample> {
             : SafeArea(
                 child: Stack(
                   children: [
+                    // Use for zoom and move
                     InteractiveViewer(
                       maxScale: 3,
                       child: FloorMapWidget(

@@ -5,23 +5,43 @@ import 'package:floors_map_widget/src/core/parser/path_instruction.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:xml/xml.dart';
 
+/// FloorSvgParser is responsible for parsing SVG content that
+/// represents floor maps. It extracts essential information
+/// such as the SVG dimensions, floor number, path data,
+/// colors (stroke and fill), and various floor elements like points,
+/// shops, parking spaces, ATMs, toilets, and stairs. The parser processes
+/// SVG elements to construct drawable paths and organizes floor items
+/// with their properties, enabling the creation of interactive
+/// and detailed floor map widgets.
 class FloorSvgParser {
   final String svgContent;
   late Size svgSize;
   late int? floorNumber;
   late final xml.XmlDocument document;
 
+  /// Constructor for FloorSvgParser.
+  ///
+  /// [svgContent]: The SVG content as a string.
+  /// [floorNumber]: Optional floor number. If not provided,
+  /// it will be extracted from the SVG.
   FloorSvgParser({required this.svgContent, this.floorNumber}) {
+    // Parse the SVG content into an XML document.
     document = xml.XmlDocument.parse(svgContent);
+    // Extract the dimensions of the SVG.
     svgSize = _getDimensions();
+    // If floorNumber is not provided, extract it from the SVG.
     floorNumber = floorNumber ?? _getFloorNumber();
   }
 
+  /// Converts a hexadecimal color string to a [Color] object.
+  ///
+  /// Returns `null` if the input is 'none'.
   Color? _colorFromHex(final String hexString) {
     if (hexString.trim().toLowerCase() == 'none') {
       return null;
     }
 
+    // Predefined color names mapped to their hex values.
     const colorMap = {
       'black': '#000000',
       'white': '#FFFFFF',
@@ -35,19 +55,25 @@ class FloorSvgParser {
 
     final colorName = hexString.trim().toLowerCase();
 
+    // If the color name exists in the map, recursively convert it.
     if (colorMap.containsKey(colorName)) {
       final hex = colorMap[colorName]!;
       return _colorFromHex(hex);
     }
 
+    // Convert hex string to Color, adding alpha if necessary.
     final buffer = StringBuffer();
     if (hexString.length == 7) {
-      buffer.write('FF');
+      // e.g., #RRGGBB
+      buffer.write('FF'); // Add full opacity.
     }
     buffer.write(hexString.replaceFirst('#', ''));
     return Color(int.parse(buffer.toString(), radix: 16));
   }
 
+  /// Extracts the x and y coordinates from a SVG path 'd' attribute.
+  ///
+  /// Assumes the path starts with a 'M' command followed by x and y values.
   Map<String, String> getCoordinatesFromPath(final String pathData) {
     final regex = RegExp(r'M(\d+\.\d+)\s(\d+)');
     final data = regex.firstMatch(pathData);
@@ -57,6 +83,7 @@ class FloorSvgParser {
     };
   }
 
+  /// Parses the SVG path data and constructs a [Path] object.
   Path parsePathData(final String pathData) {
     final path = Path();
     final commands = _parsePathCommands(pathData);
@@ -95,19 +122,22 @@ class FloorSvgParser {
           path.close();
         default:
           throw FloorParserSvgException(
-            'Unknow command: $command. Allowed: MLHVC',
+            'Unknown command: ${command.command}. Allowed commands: MLHVCZ',
           );
       }
     }
     return path;
   }
 
+  /// Parses the SVG path commands from the path data string.
+  ///
+  /// Returns a list of [PathInstruction] objects.
   List<PathInstruction> _parsePathCommands(final String pathData) {
     final regex = RegExp(r'([MLHVCZ])\s*([^A-Za-z]*)');
 
     final List<PathInstruction> pathDataMap = [];
 
-    // Поиск совпадений
+    // Iterate through all matches of the regex in the path data.
     for (final match in regex.allMatches(pathData)) {
       if (match.group(1) != null &&
           (match.group(1)!.toLowerCase().trim() == 'z' ||
@@ -118,11 +148,15 @@ class FloorSvgParser {
               match.group(1)!,
               match.group(1)!.toLowerCase().trim() == 'z'
                   ? []
-                  : match.group(2)!.split(' ').map(double.parse).toList(),
+                  : match
+                      .group(2)!
+                      .split(RegExp(r'\s+'))
+                      .map(double.parse)
+                      .toList(),
             ),
           );
         } catch (e) {
-          throw FloorParserSvgException(e.toString());
+          throw FloorParserSvgException('Error parsing path commands: $e');
         }
       }
     }
@@ -130,6 +164,7 @@ class FloorSvgParser {
     return pathDataMap;
   }
 
+  /// Retrieves the dimensions (width and height) of the SVG.
   Size _getDimensions() {
     final svgElement = document.findElements('svg').first;
     final width = double.parse(svgElement.getAttribute('width') ?? '0');
@@ -137,17 +172,22 @@ class FloorSvgParser {
     return Size(width, height);
   }
 
+  /// Extracts the floor number from the SVG's 'id' attribute.
   int _getFloorNumber() {
     final svgElement = document.findElements('svg').first;
     final String fullKey = svgElement.getAttribute('id') ?? '';
     try {
       return int.parse(fullKey.substring(fullKey.indexOf('-') + 1).trim());
     } catch (e) {
-      throw FloorParserSvgException('Id Svg Image not contains floor number. '
-          'Get: ${fullKey.substring(fullKey.indexOf('-') + 1).trim()}');
+      throw FloorParserSvgException(
+          'SVG ID does not contain a valid floor number. Extracted value: '
+          '"${fullKey.substring(fullKey.indexOf('-') + 1).trim()}"');
     }
   }
 
+  /// Retrieves the [Path] object for a given element [key].
+  ///
+  /// Throws an exception if the element is not found.
   Path getPaths(final String key) {
     final pathElements = document.findAllElements('path');
 
@@ -159,9 +199,14 @@ class FloorSvgParser {
       final d = pathElement.getAttribute('d') ?? '';
       return parsePathData(d);
     }
-    throw FloorParserSvgException('Element $key not found in getPaths time');
+    throw FloorParserSvgException(
+      'Element with id "$key" not found in getPaths.',
+    );
   }
 
+  /// Retrieves the stroke color for a given element [key].
+  ///
+  /// Returns `null` if the stroke attribute is not defined.
   Color? getColorStroke(final String key) {
     final pathElements = document.findAllElements('path');
 
@@ -179,6 +224,9 @@ class FloorSvgParser {
     return null;
   }
 
+  /// Retrieves the fill color for a given element [key].
+  ///
+  /// Returns `null` if the fill attribute is not defined.
   Color? getColorFill(final String key) {
     final pathElements = document.findAllElements('path');
 
@@ -196,13 +244,17 @@ class FloorSvgParser {
     return null;
   }
 
+  /// Extracts all floor points from the SVG.
+  ///
+  /// Throws an exception if no route anchor points are found.
   List<FloorPoint> getPoints() {
     final List<FloorPoint> pointList = [];
 
-    // Рекурсивная функция для обхода элементов
+    // Recursive function to traverse XML elements.
     void traverseElements(final XmlElement element) {
       if (element.name.local == 'circle' || element.name.local == 'path') {
         final String fullKey = (element.getAttribute('id') ?? '').trim();
+        // Check if the id contains '-', '=', and 'point'.
         if (!fullKey.contains('-') ||
             !fullKey.contains('=') ||
             !fullKey.contains('point')) {
@@ -213,9 +265,11 @@ class FloorSvgParser {
         late final String y;
 
         if (element.name.local == 'circle') {
+          // For circle elements, extract 'cx' and 'cy' attributes.
           x = (element.getAttribute('cx') ?? '').trim();
           y = (element.getAttribute('cy') ?? '').trim();
         } else {
+          // For path elements, extract coordinates from the 'd' attribute.
           final coords =
               getCoordinatesFromPath(element.getAttribute('d') ?? '');
           x = coords['x'] ?? '';
@@ -244,27 +298,32 @@ class FloorSvgParser {
         );
       }
 
-      // Рекурсивный вызов для всех дочерних элементов
+      // Recursively traverse child elements.
       element.children.whereType<XmlElement>().forEach(traverseElements);
     }
 
-    // Начинаем обход с корневого элемента документа
+    // Start traversal from the root element.
     traverseElements(document.rootElement);
 
     if (pointList.isEmpty) {
-      throw FloorParserSvgException('This map has no route anchor points');
+      throw const FloorParserSvgException(
+        'This map has no route anchor points.',
+      );
     }
     return pointList;
   }
 
+  /// Extracts all floor items (shops, parking, ATMs and more) from the SVG.
+  ///
+  /// Throws an exception if no such elements are found.
   List<FloorItem> getItems() {
     final List<FloorItem> floorItems = [];
 
-    // Рекурсивный метод для обработки всех элементов
+    // Recursive function to process XML elements.
     void processElement(final XmlElement element) {
-      // Проверяем текущий элемент
       final String fullKey = (element.getAttribute('id') ?? '').trim();
 
+      // Skip elements that do not contain '-', '=', or are not 'path' elements.
       if (!fullKey.contains('-') ||
           !fullKey.contains('=') ||
           element.name.local != 'path') {
@@ -276,6 +335,7 @@ class FloorSvgParser {
       final List<String> partsWithoutPoint = mainParts[0].split('-');
       final String keyMainType = partsWithoutPoint[0];
 
+      // Skip if the main type is 'point'.
       if (keyMainType == 'point') {
         element.children.whereType<XmlElement>().forEach(processElement);
         return;
@@ -289,15 +349,23 @@ class FloorSvgParser {
         pointId = int.parse(mainParts[1]);
       } on Exception {
         throw FloorParserSvgException(
-          'ID object there must be int. Example: shop-1=1'
-          ' or toilet-male-1=30. Get: $fullKey',
+          'ID object must be an integer. Examples: '
+          '"shop-1=1" or "toilet-male-1=30". Got: "$fullKey".',
         );
       }
 
+      // Check if the main type is supported.
       if (!SupportedClasses.regexpCheckSupported.hasMatch(keyMainType)) {
         return;
       }
-
+      final drawingInstructions = DrawingInstructions(
+        clickableArea: getPaths(fullKey),
+        sizeParentSvg: svgSize,
+        // TODO: Add colorFill and colorStroke configuration.
+        // colorFill: getColorFill(fullKey),
+        // colorStroke: getColorStroke(fullKey),
+      );
+      // Create the appropriate FloorItem based on the main type.
       switch (SupportedClasses.fromString(keyMainType)) {
         case SupportedClasses.shop:
           floorItems.add(
@@ -305,13 +373,7 @@ class FloorSvgParser {
               key: keyId,
               floor: floorNumber!,
               idPoint: pointId,
-              drawingInstructions: DrawingInstructions(
-                clickableArea: getPaths(fullKey),
-                sizeParentSvg: svgSize,
-                //TODO: ADD IN CONFIG
-                // colorFill: getColorFill(fullKey),
-                // colorStroke: getColorStroke(fullKey),
-              ),
+              drawingInstructions: drawingInstructions,
             ),
           );
         case SupportedClasses.parkingSpace:
@@ -319,13 +381,7 @@ class FloorSvgParser {
             FloorParkingSpace(
               key: keyId,
               idPoint: pointId,
-              drawingInstructions: DrawingInstructions(
-                clickableArea: getPaths(fullKey),
-                sizeParentSvg: svgSize,
-                //TODO: ADD IN CONFIG
-                // colorFill: getColorFill(fullKey),
-                // colorStroke: getColorStroke(fullKey),
-              ),
+              drawingInstructions: drawingInstructions,
               floor: floorNumber!,
             ),
           );
@@ -334,13 +390,7 @@ class FloorSvgParser {
             FloorAtmMachine(
               key: keyId,
               idPoint: pointId,
-              drawingInstructions: DrawingInstructions(
-                clickableArea: getPaths(fullKey),
-                sizeParentSvg: svgSize,
-                //TODO: ADD IN CONFIG
-                // colorFill: getColorFill(fullKey),
-                // colorStroke: getColorStroke(fullKey),
-              ),
+              drawingInstructions: drawingInstructions,
               floor: floorNumber!,
             ),
           );
@@ -349,13 +399,7 @@ class FloorSvgParser {
             FloorHygieneZone(
               key: keyId,
               idPoint: pointId,
-              drawingInstructions: DrawingInstructions(
-                clickableArea: getPaths(fullKey),
-                sizeParentSvg: svgSize,
-                //TODO: ADD IN CONFIG
-                // colorFill: getColorFill(fullKey),
-                // colorStroke: getColorStroke(fullKey),
-              ),
+              drawingInstructions: drawingInstructions,
               floor: floorNumber!,
               subType: FloorHygieneZoneType.fromString(partsWithoutPoint[1]),
             ),
@@ -365,41 +409,32 @@ class FloorSvgParser {
             FloorStairs(
               key: keyId,
               idPoint: pointId,
-              drawingInstructions: DrawingInstructions(
-                clickableArea: getPaths(fullKey),
-                sizeParentSvg: svgSize,
-                //TODO: ADD IN CONFIG
-                // colorFill: getColorFill(fullKey),
-                // colorStroke: getColorStroke(fullKey),
-              ),
+              drawingInstructions: drawingInstructions,
               floor: floorNumber!,
               subType: FloorStairsType.fromString(partsWithoutPoint[1]),
             ),
           );
+        // Handle unsupported classes.
         // ignore: no_default_cases
         default:
           throw FloorParserSvgException(
-            'Not found: ${SupportedClasses.fromString(keyMainType)}',
+            'Unsupported class type: '
+            '${SupportedClasses.fromString(keyMainType)}',
           );
       }
 
-      // Рекурсивно обрабатываем все дочерние элементы
+      // Recursively process child elements.
       element.children.whereType<XmlElement>().forEach(processElement);
     }
 
-    // // Начинаем обработку с корневых элементов
-    // document.rootElement.children
-    //     .whereType<XmlElement>()
-    //     .toList()
-    //     .forEach(processElement);
-
-    // Начинаем обработку с корневых элементов
-
+    // Start processing from the root element.
     processElement(document.rootElement);
 
     if (floorItems.isEmpty) {
-      throw FloorParserSvgException('This map has no any elements '
-          '(stores, stairs, toilet) Example store-1=3');
+      throw const FloorParserSvgException(
+        'This map has no elements (e.g., stores, '
+        'stairs, toilets). Example: "shop-1=3".',
+      );
     }
 
     return floorItems;

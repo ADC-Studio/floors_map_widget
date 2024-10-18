@@ -15,7 +15,7 @@ enum SupportedClasses {
 
   const SupportedClasses(this.toNameClass);
 
-  // Статический метод для получения значения toNameClass по экземпляру
+  /// Static method to get the value of toNameClass by instance
   static String getNameClass(final SupportedClasses instance) =>
       instance.toNameClass;
 
@@ -34,24 +34,7 @@ enum SupportedClasses {
     }
   }
 
-  //! TODO: DEL IT
-  static IconData getStandartIconD(final FloorItem instance) {
-    if (instance is FloorShop) {
-      return Icons.shopify;
-    } else if (instance is FloorParkingSpace) {
-      return Icons.local_parking;
-    } else if (instance is FloorAtmMachine) {
-      return Icons.local_atm;
-    } else if (instance is FloorHygieneZone) {
-      return Icons.wc;
-    } else if (instance is FloorStairs) {
-      return Icons.stairs;
-    } else {
-      throw Exception();
-    }
-  }
-
-  // Метод для конвертации строки в SupportedClasses
+  /// Method for converting a string to SupportedClasses
   static SupportedClasses fromString(final String str) {
     for (final value in SupportedClasses.values) {
       if (value.toNameClass.toLowerCase() == str.toLowerCase()) {
@@ -77,7 +60,7 @@ enum FloorStairsType implements FloorSubTypes {
 
   const FloorStairsType(this.type);
 
-  // Метод для конвертации строки в SupportedClasses
+  /// Method for converting a string to SupportedClasses
   static FloorStairsType fromString(final String str) {
     for (final value in FloorStairsType.values) {
       if (value.type.toLowerCase() == str.toLowerCase()) {
@@ -97,7 +80,7 @@ enum FloorHygieneZoneType implements FloorSubTypes {
 
   const FloorHygieneZoneType(this.type);
 
-  // Метод для конвертации строки в SupportedClasses
+  /// Method for converting a string to SupportedClasses
   static FloorHygieneZoneType fromString(final String str) {
     for (final value in FloorHygieneZoneType.values) {
       if (value.type.toLowerCase() == str.toLowerCase()) {

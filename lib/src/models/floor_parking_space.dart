@@ -5,11 +5,11 @@ final class FloorParkingSpace extends FloorItem {
   /// Title of parking space
   final String? title;
 
-  /// TODO: ADD SUPPORT
+  /// TODO: ADD SUPPORT IN NEW VERSION
   /// Return true if parking space has the charging place
   final bool? hasChargingPlace;
 
-  /// TODO: ADD SUPPORT
+  /// TODO: ADD SUPPORT IN NEW VERSION
   /// Return true if parking space has the washing place
   final bool? hasWashingPlace;
 

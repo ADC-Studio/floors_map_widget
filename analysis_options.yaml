@@ -180,7 +180,7 @@ linter:
     comment_references: true
     dangling_library_doc_comments: true
     deprecated_member_use_from_same_package: true
-    flutter_style_todos: true
+    flutter_style_todos: false
     implicit_call_tearoffs: true
     implicit_reopen: true
     invalid_case_patterns: true

@@ -6,7 +6,7 @@ final class FloorAtmMachine extends FloorItem {
   final String? title;
 
   FloorAtmMachine({
-    required super.key,
+    required super.id,
     required super.drawingInstructions,
     required super.floor,
     this.title,

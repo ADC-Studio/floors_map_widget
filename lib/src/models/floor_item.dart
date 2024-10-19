@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 /// Parent class for all floor items
 abstract class FloorItem {
   /// Unique identifier for floor item
-  final int key;
+  final int id;
 
   /// DrawingInstructions for floor item
   final DrawingInstructions drawingInstructions;
@@ -22,7 +22,7 @@ abstract class FloorItem {
   final FloorSubTypes? subType;
 
   const FloorItem({
-    required this.key,
+    required this.id,
     required this.drawingInstructions,
     required this.floor,
     this.icon,
@@ -36,23 +36,19 @@ abstract class FloorItem {
       return true;
     }
 
-    return other is FloorItem &&
-        other.key == key &&
-        other.drawingInstructions == drawingInstructions &&
-        other.floor == floor &&
-        other.icon == icon &&
-        other.subType == subType;
+    return other is FloorItem && other.hashCode == hashCode;
   }
 
   @override
   int get hashCode =>
-      key.hashCode ^
+      id.hashCode ^
       drawingInstructions.hashCode ^
       floor.hashCode ^
       icon.hashCode ^
       subType.hashCode;
 
   @override
-  String toString() => 'FloorItem(key: $key, drawingInstructions: '
-      '$drawingInstructions, floor: $floor, icon: $icon)';
+  String toString() => 'FloorItem(key: $id, drawingInstructions: '
+      '$drawingInstructions, floor: $floor, icon: $icon, '
+      'subType: $subType)';
 }

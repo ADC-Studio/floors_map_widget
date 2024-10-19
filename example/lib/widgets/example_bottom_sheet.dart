@@ -19,7 +19,7 @@ abstract class ExampleBottomSheet {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('Type item: ${item.runtimeType}'),
-              Text('Id item: ${item.key}'),
+              Text('Id item: ${item.id}'),
               Text('Id anchor point: ${item.idPoint}'),
               Text('Floor number: ${item.floor}'),
               Row(

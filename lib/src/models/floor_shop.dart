@@ -14,7 +14,7 @@ final class FloorShop extends FloorItem {
   final DateTime? closeTime;
 
   const FloorShop({
-    required super.key,
+    required super.id,
     required super.drawingInstructions,
     required super.floor,
     this.title,

@@ -347,11 +347,11 @@ class FloorSvgParser {
         return;
       }
 
-      late final int keyId;
+      late final int itemId;
       late final int pointId;
 
       try {
-        keyId = int.parse(partsWithoutPoint[partsWithoutPoint.length - 1]);
+        itemId = int.parse(partsWithoutPoint[partsWithoutPoint.length - 1]);
         pointId = int.parse(mainParts[1]);
       } on Exception {
         throw FloorParserSvgException(
@@ -376,7 +376,7 @@ class FloorSvgParser {
         case SupportedClasses.shop:
           floorItems.add(
             FloorShop(
-              key: keyId,
+              id: itemId,
               floor: floorNumber!,
               idPoint: pointId,
               drawingInstructions: drawingInstructions,
@@ -385,7 +385,7 @@ class FloorSvgParser {
         case SupportedClasses.parkingSpace:
           floorItems.add(
             FloorParkingSpace(
-              key: keyId,
+              id: itemId,
               idPoint: pointId,
               drawingInstructions: drawingInstructions,
               floor: floorNumber!,
@@ -394,7 +394,7 @@ class FloorSvgParser {
         case SupportedClasses.atmMachine:
           floorItems.add(
             FloorAtmMachine(
-              key: keyId,
+              id: itemId,
               idPoint: pointId,
               drawingInstructions: drawingInstructions,
               floor: floorNumber!,
@@ -403,7 +403,7 @@ class FloorSvgParser {
         case SupportedClasses.toilet:
           floorItems.add(
             FloorHygieneZone(
-              key: keyId,
+              id: itemId,
               idPoint: pointId,
               drawingInstructions: drawingInstructions,
               floor: floorNumber!,
@@ -413,7 +413,7 @@ class FloorSvgParser {
         case SupportedClasses.stairs:
           floorItems.add(
             FloorStairs(
-              key: keyId,
+              id: itemId,
               idPoint: pointId,
               drawingInstructions: drawingInstructions,
               floor: floorNumber!,
@@ -425,7 +425,7 @@ class FloorSvgParser {
         default:
           throw FloorParserSvgException(
             'Unsupported class type: '
-            '${SupportedClasses.fromString(keyMainType)}',
+            '$keyMainType',
           );
       }
 

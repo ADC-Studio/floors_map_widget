@@ -14,7 +14,7 @@ final class FloorParkingSpace extends FloorItem {
   final bool? hasWashingPlace;
 
   const FloorParkingSpace({
-    required super.key,
+    required super.id,
     required super.drawingInstructions,
     required super.floor,
     this.title,

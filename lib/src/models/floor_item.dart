@@ -40,12 +40,15 @@ abstract class FloorItem {
   }
 
   @override
-  int get hashCode =>
-      id.hashCode ^
-      drawingInstructions.hashCode ^
-      floor.hashCode ^
-      icon.hashCode ^
-      subType.hashCode;
+  int get hashCode => Object.hashAll(
+        [
+          id.hashCode,
+          drawingInstructions.hashCode,
+          floor.hashCode,
+          icon.hashCode,
+          subType.hashCode,
+        ],
+      );
 
   @override
   String toString() => 'FloorItem(key: $id, drawingInstructions: '

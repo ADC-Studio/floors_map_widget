@@ -3,6 +3,10 @@ description: "This widget allows you to create an interactive building map from
   an SVG image"
 version: 1.0.0
 homepage: https://github.com/ADC-Studio/floors_map_widget.git
+repository: https://github.com/ADC-Studio/floors_map_widget.git
+issue_tracker: https://github.com/ADC-Studio/floors_map_widget/issues
+topics: ["map", "floor", "path builder", "building a route", "route", "svg", 
+"architecture", "floor-navigation", "navigation", "interactive-map", "floor-plan", "widget"]
 
 environment:
   sdk: '>=3.1.0 <4.0.0'

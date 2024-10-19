@@ -10,11 +10,15 @@ class FloorPathPainter extends StatefulWidget {
   // Necessary for miscalculations
   final Size? parentSize;
 
+  /// Default Colors.red
+  final Color? colorPath;
+
   /// Creates a [FloorPathPainter] widget that animates
   /// a path along given points.
   const FloorPathPainter(
     this.listPoints, {
     this.parentSize,
+    this.colorPath,
     super.key,
   });
 
@@ -114,10 +118,10 @@ class _FloorPathPainterState extends State<FloorPathPainter>
   Widget build(final BuildContext context) => IgnorePointer(
         child: AnimatedBuilder(
           animation: _controller,
-          builder: (final context, final child) => CustomPaint(
+          builder: (final _, final child) => CustomPaint(
             painter: _CustomPathPainter(
               pathWithOffset: _getPathWithOffset(context),
-              color: Colors.red,
+              color: widget.colorPath ?? Colors.red,
               progress: _progressAnimation.value,
               fadeProgress: _fadeAnimation.value,
             ),

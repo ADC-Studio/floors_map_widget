@@ -16,7 +16,7 @@
 [![ru](https://img.shields.io/badge/lang-ru-yellow.svg)](README.ru.md)
 
 <p align="center">
-        <img src="https://private-user-images.githubusercontent.com/55548743/377865297-be17fe66-f79c-4064-be7e-ce22d8721361.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjkyNTQ2NTEsIm5iZiI6MTcyOTI1NDM1MSwicGF0aCI6Ii81NTU0ODc0My8zNzc4NjUyOTctYmUxN2ZlNjYtZjc5Yy00MDY0LWJlN2UtY2UyMmQ4NzIxMzYxLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDEwMTglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQxMDE4VDEyMjU1MVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTJjODVjNDNkMjdiMTQ3MDI2NTEyODRkZGM1ODQ4NWIwMWY4YjA1MTAzZTc4ODBjMDBiMmEzY2IxMjQzYzM3NDImWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.wrzY67vMeV3mfqvo01XwoNZRQjVDylM8YrWx942PtZo" alt="Logo" />
+        <img src="https://github.com/user-attachments/assets/546c6ba6-98e1-477c-afe0-8febdba6da8c" alt="Logo" />
 </p>
 </div>
 
@@ -75,7 +75,7 @@ Now, you need to prepare this map to work with FloorMapWidget. You need to set r
 
 Place the points and connect them into routes. You can read a more detailed description [here](https://github.com/ADC-Studio/FloorsMapWidgetFigmaExtension).
 
-![MapPluginExample](https://private-user-images.githubusercontent.com/55548743/377865309-853cf782-c018-4e22-8694-9fc3cd3f2a98.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjkyNTQ2NTEsIm5iZiI6MTcyOTI1NDM1MSwicGF0aCI6Ii81NTU0ODc0My8zNzc4NjUzMDktODUzY2Y3ODItYzAxOC00ZTIyLTg2OTQtOWZjM2NkM2YyYTk4LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDEwMTglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQxMDE4VDEyMjU1MVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTFlMjkzMzFjMTAxYmFjMDQzOWRmMjE3N2NmNGU2NDNjNTY1ZjY2YzA3YTFjMmZjZmQ2MGE1ZWI2MGJiZTYyNzcmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.6Xi5ebeQGTtE98sifNbj1GNGFBF3tCxHT4zc7L4QCu4)
+![MapPluginExample](https://github.com/user-attachments/assets/2a780fb4-5541-4334-a229-a7577a65b730)
 
 #### Manual Implementation
 
@@ -170,7 +170,7 @@ final listItems = parser.getItems();
 
 For more information, visit the Example with prepared code and map [example](/example/README.md).
 
-![Example](https://private-user-images.githubusercontent.com/55548743/377865034-1f945a9a-dd47-4941-a6ad-80647f592bbf.gif?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjkyNTQ2NTEsIm5iZiI6MTcyOTI1NDM1MSwicGF0aCI6Ii81NTU0ODc0My8zNzc4NjUwMzQtMWY5NDVhOWEtZGQ0Ny00OTQxLWE2YWQtODA2NDdmNTkyYmJmLmdpZj9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDEwMTglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQxMDE4VDEyMjU1MVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWQzNDZhMTc5NzhhNjI0YzdhMTk0M2Y0YzAyNTUzYjY4Y2QzNTMzODUyNGY3YzBhY2Q2MTk3OTc0NWM2YmI4ZTEmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.UNJD2GwBmO8sbk7DGQqNETzDjL7EpKVy9SYAPLgLMME)
+![Example](https://github.com/user-attachments/assets/db2ae074-69e9-4e20-81b3-ce831daa5ae8)
 
 ## How to Contribute
 

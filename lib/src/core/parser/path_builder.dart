@@ -12,9 +12,9 @@ final class PathBuilder {
     required this.endId,
     required this.coords,
   });
-
   Map<String, dynamic> findShortestPath() {
     // Intialize the distance list
+    // TODO: Should this not take all the coords?
     final distances = List<double>.filled(coords.length, double.infinity);
     // Nodes we are already used
     final prevNodes = List<int?>.filled(coords.length, null);

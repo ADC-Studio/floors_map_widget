@@ -32,44 +32,51 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
     final parser = FloorSvgParser(svgContent: widget.svgContent);
     listPoints = parser.getPoints();
   }
-
   @override
-  Widget build(final BuildContext context) => RepaintBoundary(
-        child: LayoutBuilder(
-          builder: (final context, final constraints) => Stack(
-            children: [
-              SvgMap(
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // we could do constraints.biggest;
+        final parentSize = constraints.biggest;
+
+        return Stack(
+          children: [
+            /// --- Static SVG Map (rarely changes) ---
+            RepaintBoundary(
+              child: SvgMap(
                 widget.svgContent,
-                sizeMap: Size(
-                  constraints.maxWidth,
-                  constraints.maxHeight,
-                ),
+                sizeMap: parentSize,
                 hidePoints: widget.unvisiblePoints,
               ),
-              ...widget.listItemsWidgets.map(
-                (final item) => item.parentSize == null
-                    ? item.copyWith(
-                        parentSize: Size(
-                          constraints.maxWidth,
-                          constraints.maxHeight,
-                        ),
-                      )
-                    : item,
+            ),
+
+            /// --- Interactive Items (change independently) ---
+            RepaintBoundary(
+              child: Stack(
+                children: widget.listItemsWidgets.map((item) {
+                  return item.parentSize == null
+                      ? item.copyWith(parentSize: parentSize)
+                      : item;
+                }).toList(),
               ),
-              if (widget.startIdPoint != null && widget.endIdPoint != null)
-                FloorPathPainter(
+            ),
+
+            /// --- Path Painter (only appears when a path is active) ---
+            if (widget.startIdPoint != null && widget.endIdPoint != null)
+              RepaintBoundary(
+                child: FloorPathPainter(
                   PathBuilder(
                     startId: widget.startIdPoint!,
                     endId: widget.endIdPoint!,
                     coords: listPoints,
                   ).findShortestPath()['points'] as List<FloorPoint>,
-                  parentSize: Size(
-                    constraints.maxWidth,
-                    constraints.maxHeight,
-                  ),
+                  parentSize: parentSize,
                 ),
-            ],
-          ),
-        ),
-      );
+              ),
+          ],
+        );
+      },
+    );
+  }
+     
 }

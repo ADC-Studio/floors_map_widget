@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 abstract class FloorSubTypes {}
 
 /// SupportedClasses in floor_map
+// TODO: Add more suported clases or generic that can be programatically built
 enum SupportedClasses {
   shop('shop'),
   parkingSpace('parkingspace'),

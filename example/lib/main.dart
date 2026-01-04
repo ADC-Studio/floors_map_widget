@@ -23,6 +23,8 @@ class _SvgMapExampleState extends State<SvgMapExample> {
   // Points to build a route
   FloorItem? _startPointItem;
   FloorItem? _endPointItem;
+  List<FloorPoint>? points;
+  List<FloorItem>? items;
 
   @override
   void initState() {
@@ -68,13 +70,18 @@ class _SvgMapExampleState extends State<SvgMapExample> {
   Future<void> _initializeMap() async {
     try {
       final svgContent =
-          await rootBundle.loadString('assets/map_with_points_example.svg');
+          await rootBundle.loadString('assets/frutras_y_hortalizas_full_coors_optimized_no_groups.svg');
+          // await rootBundle.loadString('assets/frutras_y_hortalizas_full_coors.svg');
+          // await rootBundle.loadString('assets/frutras_y_hortalizas.svg');
+          // await rootBundle.loadString('assets/map_with_points_example.svg');
       // Parser initialization
       final parser = FloorSvgParser(svgContent: svgContent);
       // You can get anchor points from the map
       // ignore: unused_local_variable
-      final listPoints = parser.getPoints();
+      points ??= parser.getPoints();
+      final listPoints = points;
       // You can get all objects supported by the library
+      items ??= parser.getItems();
       final listItems = parser.getItems();
       // We create FloorItemWidget based on FloorItem
       final listWidgets = listItems
@@ -105,6 +112,8 @@ class _SvgMapExampleState extends State<SvgMapExample> {
       );
     } catch (e) {
       debugPrint('Error initial map: $e');
+
+      rethrow;
       setState(() {
         _svgContent = null;
       });
@@ -124,6 +133,7 @@ class _SvgMapExampleState extends State<SvgMapExample> {
                     // Use for zoom and move
                     InteractiveViewer(
                       maxScale: 3,
+                      // TODO: Change for Builder approach so it does not lags on mobile phones
                       child: FloorMapWidget(
                         // String from SVG Map
                         _svgContent!,

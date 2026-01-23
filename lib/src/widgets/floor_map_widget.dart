@@ -2,6 +2,7 @@ import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:flutter/material.dart';
 
 class FloorMapWidget extends StatefulWidget {
+  final List<FloorPoint> listPoints;
   final String svgContent;
   final List<FloorItemWidget> listItemsWidgets;
   final bool unvisiblePoints;
@@ -11,7 +12,8 @@ class FloorMapWidget extends StatefulWidget {
   /// A widget that displays an SVG map with interactive floor items.
   const FloorMapWidget(
     this.svgContent,
-    this.listItemsWidgets, {
+    this.listItemsWidgets,
+    this.listPoints, {
     this.unvisiblePoints = false,
     this.startIdPoint,
     this.endIdPoint,
@@ -29,9 +31,34 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
   @override
   void initState() {
     super.initState();
-    final parser = FloorSvgParser(svgContent: widget.svgContent);
-    listPoints = parser.getPoints();
+    listPoints = widget.listPoints;
   }
+
+  List<FloorPoint> _calculatedPath = [];
+
+  @override
+  void didUpdateWidget(FloorMapWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // prevent calculating the shortest path every time the map is zoomed in/out
+    if (widget.startIdPoint != oldWidget.startIdPoint ||
+        widget.endIdPoint != oldWidget.endIdPoint) {
+      _calculatePath();
+    }
+  }
+
+  void _calculatePath() {
+    if (widget.startIdPoint != null && widget.endIdPoint != null) {
+      final path = PathBuilder(
+        startId: widget.startIdPoint!,
+        endId: widget.endIdPoint!,
+        coords: listPoints,
+      ).findShortestPath()['points'] as List<FloorPoint>;
+      setState(() {
+        _calculatedPath = path;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -62,14 +89,10 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
             ),
 
             /// --- Path Painter (only appears when a path is active) ---
-            if (widget.startIdPoint != null && widget.endIdPoint != null)
+            if (_calculatedPath.isNotEmpty)
               RepaintBoundary(
                 child: FloorPathPainter(
-                  PathBuilder(
-                    startId: widget.startIdPoint!,
-                    endId: widget.endIdPoint!,
-                    coords: listPoints,
-                  ).findShortestPath()['points'] as List<FloorPoint>,
+                  _calculatedPath,
                   parentSize: parentSize,
                 ),
               ),
@@ -78,5 +101,4 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
       },
     );
   }
-     
 }

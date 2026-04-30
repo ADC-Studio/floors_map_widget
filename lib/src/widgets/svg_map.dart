@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:vector_graphics/vector_graphics_compat.dart';
 import 'package:xml/xml.dart';
 
 class SvgMap extends StatefulWidget {
@@ -48,10 +49,16 @@ class _SvgMapState extends State<SvgMap> {
 
   @override
   Widget build(final BuildContext context) => Center(
-        child: SvgPicture.string(
+        child: 
+        RepaintBoundary( 
+          child: 
+          SvgPicture.string(
           _svgContent,
           width: widget.sizeMap?.width,
           height: widget.sizeMap?.height,
-        ),
+          renderingStrategy: RenderingStrategy.raster
+        )
+        )
+        
       );
 }

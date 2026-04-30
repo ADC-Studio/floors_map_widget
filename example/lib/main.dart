@@ -71,7 +71,9 @@ class _SvgMapExampleState extends State<SvgMapExample> {
   Future<void> _initializeMap() async {
     try {
       final svgContent =
-          await rootBundle.loadString('assets/map_with_points_example.svg');
+          // await rootBundle.loadString('assets/map_with_points_example.svg');
+          await rootBundle.loadString(
+              'assets/frutras_y_hortalizas_full_coors_optimized_no_groups.svg');
       // Parser initialization
       final parser = FloorSvgParser(svgContent: svgContent);
       // You can get anchor points from the map
@@ -176,30 +178,24 @@ class _SvgMapExampleState extends State<SvgMapExample> {
         body: _svgContent == null
             ? const Center(child: CircularProgressIndicator())
             : SafeArea(
-                child: Stack(
-                  children: [
-                    // Use for zoom and move
-                    InteractiveViewer(
-                      // clipBehavior: Clip.none,
-                      maxScale: 3,
-                      minScale: 1,
-                      // TODO: Evaluate changing draw strategy to layers (use builder to only draw visible part)
-                      child: RepaintBoundary(
-                        child: FloorMapWidget(
-                          // String from SVG Map
-                          _svgContent!,
-                          // Floors widgets
-                          _listWidgets,
-                          points!,
-                          // Use for build a route
-                          startIdPoint: _startPointItem?.idPoint,
-                          endIdPoint: _endPointItem?.idPoint,
-                          // Use for remove points from svg
-                          unvisiblePoints: true,
-                        ),
-                      ),
+                child: RepaintBoundary(
+                  // TODO: Evaluate changing draw strategy to layers (use builder to only draw visible part)
+                  child: InteractiveViewer(
+                    maxScale: 5,
+                    minScale: 1,
+                    child: FloorMapWidget(
+                      // String from SVG Map
+                      _svgContent!,
+                      // Floors widgets
+                      _listWidgets,
+                      points!,
+                      // Use for build a route
+                      startIdPoint: _startPointItem?.idPoint,
+                      endIdPoint: _endPointItem?.idPoint,
+                      // Use for remove points from svg
+                      unvisiblePoints: true,
                     ),
-                  ],
+                  ),
                 ),
               ),
       );

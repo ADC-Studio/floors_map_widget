@@ -26,11 +26,38 @@ class _SvgMapExampleState extends State<SvgMapExample> {
   List<FloorPoint>? points;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   List<FloorItem>? items;
+  late ValueNotifier<SvgMapRenderProperties> renderPropertiesNotifier;
+  // final ValueNotifier<bool> reRenderTooggle = ValueNotifier(false);
+
+  final TransformationController _transformationController =
+      TransformationController();
+
+  double renderDirection = 1 / 1;
+
+  void _onScaleEnd(final ScaleEndDetails details) {
+    final double currentScale =
+        _transformationController.value.getMaxScaleOnAxis();
+    final double newDirection = currentScale >= 5.0 ? 1 : (1 / 1);
+    if (newDirection != renderDirection) {
+      renderPropertiesNotifier.value = renderPropertiesNotifier.value.copyWith(
+        mapSize: renderPropertiesNotifier.value.mapSize! * newDirection,
+      );
+      renderDirection = newDirection;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _initializeMap();
+
+    // _initializeMap();
+  }
+
+  @override
+  void dispose() {
+    _transformationController..dispose();
+    super.dispose();
   }
 
   // An example of how to turn on an object's blinking
@@ -70,10 +97,13 @@ class _SvgMapExampleState extends State<SvgMapExample> {
 
   Future<void> _initializeMap() async {
     try {
-      final svgContent =
-          // await rootBundle.loadString('assets/map_with_points_example.svg');
-          await rootBundle.loadString(
-              'assets/frutras_y_hortalizas_full_coors_optimized_no_groups.svg');
+      final svgContent = await rootBundle.loadString(
+        'assets/frutras_y_hortalizas_full_coors_optimized_no_groups.svg',
+      );
+      const compiledSVGAsset =
+          'assets/frutras_y_hortalizas_full_coors_optimized_no_groups.vg';
+      // await rootBundle.loadString(
+      //     'assets/frutras_y_hortalizas_full_coors_optimized_no_groups.svg');
       // Parser initialization
       final parser = FloorSvgParser(svgContent: svgContent);
       // You can get anchor points from the map
@@ -107,6 +137,15 @@ class _SvgMapExampleState extends State<SvgMapExample> {
           _listWidgets = listWidgets;
           _startPointItem = null;
           _endPointItem = null;
+
+          renderPropertiesNotifier = ValueNotifier(
+            SvgMapRenderProperties(
+              mapSize: null,
+              svgData: compiledSVGAsset,
+              svgSource: SvgSource.compiled,
+              renderingStrategy: RenderStrategy.picture,
+            ),
+          );
         },
       );
     } catch (e) {
@@ -178,17 +217,21 @@ class _SvgMapExampleState extends State<SvgMapExample> {
         body: _svgContent == null
             ? const Center(child: CircularProgressIndicator())
             : SafeArea(
-                child: RepaintBoundary(
-                  // TODO: Evaluate changing draw strategy to layers (use builder to only draw visible part)
-                  child: InteractiveViewer(
-                    maxScale: 5,
-                    minScale: 1,
+                // TODO: Evaluate changing draw strategy to layers (use builder to only draw visible part)
+                child: InteractiveViewer(
+                  transformationController: _transformationController,
+                  onInteractionEnd: _onScaleEnd,
+                  maxScale: 20,
+                  minScale: 1,
+                  child: RepaintBoundary(
                     child: FloorMapWidget(
                       // String from SVG Map
                       _svgContent!,
                       // Floors widgets
                       _listWidgets,
                       points!,
+                      renderPropertiesNotifier: renderPropertiesNotifier,
+                      // reRenderToogle: reRenderTooggle,
                       // Use for build a route
                       startIdPoint: _startPointItem?.idPoint,
                       endIdPoint: _endPointItem?.idPoint,

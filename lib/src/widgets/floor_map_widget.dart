@@ -8,12 +8,16 @@ class FloorMapWidget extends StatefulWidget {
   final bool unvisiblePoints;
   final int? startIdPoint;
   final int? endIdPoint;
+  // final ValueNotifier<bool> reRenderToogle;
+  final ValueNotifier<SvgMapRenderProperties> renderPropertiesNotifier;
 
   /// A widget that displays an SVG map with interactive floor items.
   const FloorMapWidget(
     this.svgContent,
     this.listItemsWidgets,
     this.listPoints, {
+    // required this.reRenderToogle,
+    required this.renderPropertiesNotifier,
     this.unvisiblePoints = false,
     this.startIdPoint,
     this.endIdPoint,
@@ -37,7 +41,7 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
   List<FloorPoint> _calculatedPath = [];
 
   @override
-  void didUpdateWidget(FloorMapWidget oldWidget) {
+  void didUpdateWidget(final FloorMapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     // prevent calculating the shortest path every time the map is zoomed in/out
     if (widget.startIdPoint != oldWidget.startIdPoint ||
@@ -60,45 +64,57 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // we could do constraints.biggest;
-        final parentSize = constraints.biggest;
+  Widget build(final BuildContext context) => LayoutBuilder(
+        builder: (final context, final constraints) {
+          // we could do constraints.biggest;
+          final parentSize = constraints.biggest;
+          if (widget.renderPropertiesNotifier.value.size == null){
+            widget.renderPropertiesNotifier.value.size = parentSize;
 
-        return Stack(
-          children: [
-            /// --- Static SVG Map (rarely changes) ---
-            RepaintBoundary(
-              child: SvgMap(
-                widget.svgContent,
-                sizeMap: parentSize,
-                hidePoints: widget.unvisiblePoints,
-              ),
-            ),
+          }
 
-            /// --- Interactive Items (change independently) ---
-            RepaintBoundary(
-              child: Stack(
-                children: widget.listItemsWidgets.map((item) {
-                  return item.parentSize == null
-                      ? item.copyWith(parentSize: parentSize)
-                      : item;
-                }).toList(),
-              ),
-            ),
-
-            /// --- Path Painter (only appears when a path is active) ---
-            if (_calculatedPath.isNotEmpty)
+          return Stack(
+            children: [
+              /// --- Static SVG Map (rarely changes) ---
               RepaintBoundary(
-                child: FloorPathPainter(
-                  _calculatedPath,
-                  parentSize: parentSize,
+                child: SvgMap.listenable(
+                  widget.renderPropertiesNotifier,
+                  // widget.svgContent,
+                  // initialSize: parentSize,
+                  // redrawSignal: widget.reRenderToogle,
+                  // hidePoints: widget.unvisiblePoints,
+                ),
+                // child: SvgMap.string(
+                //   widget.svgContent,
+                //   initialSize: parentSize,
+                //   redrawSignal: widget.reRenderToogle,
+                //   // hidePoints: widget.unvisiblePoints,
+                // ),
+              ),
+
+              /// --- Interactive Items (change independently) ---
+              RepaintBoundary(
+                child: Stack(
+                  children: widget.listItemsWidgets
+                      .map(
+                        (final item) => item.parentSize == null
+                            ? item.copyWith(parentSize: parentSize)
+                            : item,
+                      )
+                      .toList(),
                 ),
               ),
-          ],
-        );
-      },
-    );
-  }
+
+              /// --- Path Painter (only appears when a path is active) ---
+              if (_calculatedPath.isNotEmpty)
+                RepaintBoundary(
+                  child: FloorPathPainter(
+                    _calculatedPath,
+                    parentSize: parentSize,
+                  ),
+                ),
+            ],
+          );
+        },
+      );
 }

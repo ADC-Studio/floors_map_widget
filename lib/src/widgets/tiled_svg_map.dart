@@ -26,7 +26,7 @@ class _TileKey {
 
 class TiledSvgMap extends StatefulWidget {
   final ValueListenable<SvgMapRenderProperties> renderPropertiesListenable;
-  final TransformationController transformationController; // Add this
+  final TransformationController transformationController;
 
   const TiledSvgMap.listenable(
     this.renderPropertiesListenable,
@@ -42,22 +42,19 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   late BytesLoader _vectorLoader;
   late SvgMapRenderProperties currentRenderProperties;
 
-  // High-level cache for our generated tiles
   final Map<_TileKey, ui.Image> _tileCache = {};
-  final double _tileSize = 500.0; // Standard tile size for GPU stability
+  // Tile size in pixels (logical size, not scaled)
+  final double _tileSize = 512.0; // Power of 2 for better GPU performance
 
   @override
   void initState() {
     super.initState();
     currentRenderProperties = widget.renderPropertiesListenable.value;
     widget.transformationController.addListener(_onTransformationChanged);
-
     _loadSvg();
   }
 
   void _onTransformationChanged() {
-    // This will be called frequently during pan/zoom.
-    // The triggerVisibleTiles logic inside the FutureBuilder will handle the rest.
     setState(() {});
   }
 
@@ -77,7 +74,6 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     _tileCache.clear();
   }
 
-  /// The engine room: Extracts a specific section of the SVG as a ui.Image
   Future<void> _generateTile(
       int col, int row, double scale, PictureInfo pictureInfo) async {
     final key = _TileKey(col, row, scale);
@@ -85,36 +81,31 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder)
+      ..clipRect(Rect.fromLTWH(0, 0, _tileSize, _tileSize))
+      ..save()
+      ..translate(-(col * _tileSize), -(row * _tileSize))
+      ..scale(scale)
+      ..drawPicture(pictureInfo.picture)
+      ..restore();
 
-    // 1. Clip and Save state
-    ..clipRect(Rect.fromLTWH(0, 0, _tileSize, _tileSize))
-    ..save() // <--- SAVE HERE
-
-    // 2. Transform and draw the SVG section
-    ..translate(-(col * _tileSize), -(row * _tileSize)) // Use pixel units
-    ..scale(scale)
-    ..drawPicture(pictureInfo.picture)
-
-    ..restore(); // <--- RESTORE HERE to reset coordinates to (0,0) of the tile
-
-    // 3. Draw debug info (Now it stays in the same spot on every tile)
+    // Debug overlay
     final debugPaint = Paint()
-      ..color = const Color(0x80FF0000)
+      ..color = const Color(0x40FF0000)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0;
+      ..strokeWidth = 2.0;
     canvas.drawRect(Rect.fromLTWH(0, 0, _tileSize, _tileSize), debugPaint);
 
     TextPainter(
         text: TextSpan(
-          text: 'Tile: $col,$row',
+          text: '$col,$row',
           style: const TextStyle(
               color: Color(0xFF000000),
-              fontSize: 28,
+              fontSize: 24,
               backgroundColor: Color(0x80FFFFFF)),
         ),
         textDirection: TextDirection.ltr)
       ..layout(maxWidth: _tileSize)
-      ..paint(canvas, const Offset(20, 20));
+      ..paint(canvas, const Offset(10, 10));
 
     final image = await recorder
         .endRecording()
@@ -133,7 +124,6 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
             _loadSvg();
           }
 
-          // We use FutureBuilder to get the ui.Picture once
           return FutureBuilder<PictureInfo>(
             future: vg.loadPicture(_vectorLoader, context),
             builder: (context, snapshot) {
@@ -141,27 +131,59 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
                 return renderProperties.loading ?? const SizedBox();
 
               final pictureInfo = snapshot.data!;
-              // Use the parent's size (from LayoutBuilder) as the logical base
-              final visualSize = currentRenderProperties.size!;
-              final logicalSize = renderProperties.size ?? pictureInfo.size;
 
-              // The "Internal Scale" is how much we multiply the logical size
-              // to get our target high-res version.
-              // For a 512px tile system, if your map is 1000px, a scale of 2.0
-              // means a 2000px virtual canvas.
+              // MAP CONTENT SIZE: The actual SVG content dimensions
+              final Size mapContentSize =
+                  pictureInfo.size; // Size(840.8, 917.1)
+
+              // DISPLAY SIZE: The window/screen size where we show the map
+              final Size displaySize =
+                  renderProperties.size ?? mapContentSize; // Size(800.0, 544.0)
+
+              // Calculate scale to fit the entire map in the display area
+              final double scaleX = displaySize.width / mapContentSize.width;
+              final double scaleY = displaySize.height / mapContentSize.height;
+              final double fitScale = (scaleX < scaleY ? scaleX : scaleY) *
+                  0.95; // 95% to add padding
+
+              debugPrint('Map content size: $mapContentSize');
+              debugPrint('Display size: $displaySize');
+              debugPrint('Fit scale: $fitScale');
+
               const double rasterScale = 5.0;
 
-              // Trigger the generation using the internal scale
-              _triggerVisibleTiles(logicalSize, rasterScale, pictureInfo);
+              // Generate tiles based on MAP CONTENT SIZE at rasterScale
+              int cols =
+                  (mapContentSize.width * rasterScale / _tileSize).ceil();
+              int rows =
+                  (mapContentSize.height * rasterScale / _tileSize).ceil();
 
+              debugPrint('Generating $cols x $rows tiles');
+
+              // Generate ALL tiles for the complete map
+              for (int x = 0; x < cols; x++) {
+                for (int y = 0; y < rows; y++) {
+                  _generateTile(x, y, rasterScale, pictureInfo);
+                }
+              }
+
+              // The widget is sized to display size, but content is the full map
               return SizedBox(
-                width: logicalSize.width,
-                height: logicalSize.height,
-                child: CustomPaint(
-                  painter: SvgTilePainter(
-                    tileCache: _tileCache,
-                    tileSize: _tileSize,
-                    gridScale: rasterScale, // This is the 'rasterScale'
+                width: displaySize.width,
+                height: displaySize.height,
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: SizedBox(
+                    width: mapContentSize.width,
+                    height: mapContentSize.height,
+                    child: CustomPaint(
+                      size: mapContentSize,
+                      painter: SvgTilePainter(
+                        tileCache: _tileCache,
+                        tileSize: _tileSize,
+                        gridScale: rasterScale,
+                      ),
+                    ),
                   ),
                 ),
               );
@@ -169,45 +191,6 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
           );
         },
       );
-
-  void _triggerVisibleTiles(Size logicalSize, double scale, PictureInfo info) {
-    final Matrix4 matrix = widget.transformationController.value;
-
-    // Calculate the visible bounds in logical coordinates
-    // We divide by the current zoom level to see the "world" coordinates
-    final double currentScale = matrix.getMaxScaleOnAxis();
-    final double viewportWidth =
-        currentRenderProperties.size!.width / currentScale;
-    final double viewportHeight =
-        currentRenderProperties.size!.height / currentScale;
-
-    final double localX = -matrix.getTranslation().x / currentScale;
-    final double localY = -matrix.getTranslation().y / currentScale;
-
-    final Rect viewport =
-        Rect.fromLTWH(localX, localY, viewportWidth, viewportHeight);
-
-    // Buffer: Increase viewport slightly to preload tiles just off-screen
-    final Rect bufferedViewport = viewport.inflate(_tileSize / scale);
-
-    int cols = (logicalSize.width * scale / _tileSize).ceil();
-    int rows = (logicalSize.height * scale / _tileSize).ceil();
-
-    for (int x = 0; x < cols; x++) {
-      for (int y = 0; y < rows; y++) {
-        final tileRect = Rect.fromLTWH(
-          (x * _tileSize) / scale,
-          (y * _tileSize) / scale,
-          _tileSize / scale,
-          _tileSize / scale,
-        );
-
-        if (bufferedViewport.overlaps(tileRect)) {
-          _generateTile(x, y, scale, info);
-        }
-      }
-    }
-  }
 
   @override
   void dispose() {
@@ -232,16 +215,21 @@ class SvgTilePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..filterQuality = ui.FilterQuality.high;
 
+    // Draw background to show map area
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Paint()..color = const Color(0xFFF5F5F5),
+    );
+
     tileCache.forEach((key, image) {
-      // Calculate the top-left position where this tile belongs in logical pixels
       final double x = (key.col * tileSize) / gridScale;
       final double y = (key.row * tileSize) / gridScale;
+      final double tileLogicalSize = tileSize / gridScale;
 
-      // Draw the tile scaled back down to logical size
       canvas.drawImageRect(
         image,
         Rect.fromLTWH(0, 0, tileSize, tileSize),
-        Rect.fromLTWH(x, y, tileSize / gridScale, tileSize / gridScale),
+        Rect.fromLTWH(x, y, tileLogicalSize, tileLogicalSize),
         paint,
       );
     });

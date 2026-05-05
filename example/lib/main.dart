@@ -60,41 +60,6 @@ class _SvgMapExampleState extends State<SvgMapExample> {
     super.dispose();
   }
 
-  // An example of how to turn on an object's blinking
-  void searchObjects<T extends FloorItem>({final FloorSubTypes? subType}) {
-    _listWidgets = _listWidgets.map((final item) {
-      if (item.item is T && (subType == null || subType == item.item.subType)) {
-        return item.copyWith(isActiveBlinking: true);
-      }
-
-      return item.copyWith(isActiveBlinking: false);
-    }).toList();
-
-    setState(() {});
-  }
-
-  // An example of obtaining information and building a route
-  Future<void> _handleFloorItemTap(final FloorItem floorItem) async {
-    await ExampleBottomSheet.showBottomSheet(
-      context,
-      floorItem,
-      () => _setStartPoint(floorItem),
-      () => _setEndPoint(floorItem),
-    );
-  }
-
-  void _setStartPoint(final FloorItem floorItem) {
-    setState(() {
-      _startPointItem = floorItem;
-    });
-  }
-
-  void _setEndPoint(final FloorItem floorItem) {
-    setState(() {
-      _endPointItem = floorItem;
-    });
-  }
-
   Future<void> _initializeMap() async {
     try {
       final svgContent = await rootBundle.loadString(
@@ -156,6 +121,44 @@ class _SvgMapExampleState extends State<SvgMapExample> {
     }
   }
 
+  @override
+  Widget build(final BuildContext context) => Scaffold(
+        key: _scaffoldKey,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButton: _buildFloatingActionButtons(context),
+        appBar: AppBar(
+          title: const Text('Example Map Widget'),
+        ),
+        body: _svgContent == null
+            ? const Center(child: CircularProgressIndicator())
+            : SafeArea(
+                // TODO: Evaluate changing draw strategy to layers (use builder to only draw visible part)
+                child: InteractiveViewer(
+                  transformationController: _transformationController,
+                  onInteractionEnd: _onScaleEnd,
+                  maxScale: 20,
+                  minScale: 1,
+                  child: RepaintBoundary(
+                    child: FloorMapWidget(
+                      // String from SVG Map
+                      _svgContent!,
+                      // Floors widgets
+                      _listWidgets,
+                      points!,
+                      renderPropertiesNotifier: renderPropertiesNotifier,
+                      transformationController: _transformationController,
+                      // reRenderToogle: reRenderTooggle,
+                      // Use for build a route
+                      startIdPoint: _startPointItem?.idPoint,
+                      endIdPoint: _endPointItem?.idPoint,
+                      // Use for remove points from svg
+                      unvisiblePoints: true,
+                    ),
+                  ),
+                ),
+              ),
+      );
+
   Widget _buildFloatingActionButtons(final BuildContext context) => Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -206,42 +209,40 @@ class _SvgMapExampleState extends State<SvgMapExample> {
         ),
       );
 
-  @override
-  Widget build(final BuildContext context) => Scaffold(
-        key: _scaffoldKey,
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        floatingActionButton: _buildFloatingActionButtons(context),
-        appBar: AppBar(
-          title: const Text('Example Map Widget'),
-        ),
-        body: _svgContent == null
-            ? const Center(child: CircularProgressIndicator())
-            : SafeArea(
-                // TODO: Evaluate changing draw strategy to layers (use builder to only draw visible part)
-                child: InteractiveViewer(
-                  transformationController: _transformationController,
-                  onInteractionEnd: _onScaleEnd,
-                  maxScale: 20,
-                  minScale: 1,
-                  child: RepaintBoundary(
-                    child: FloorMapWidget(
-                      // String from SVG Map
-                      _svgContent!,
-                      // Floors widgets
-                      _listWidgets,
-                      points!,
-                      renderPropertiesNotifier: renderPropertiesNotifier,
-                      // reRenderToogle: reRenderTooggle,
-                      // Use for build a route
-                      startIdPoint: _startPointItem?.idPoint,
-                      endIdPoint: _endPointItem?.idPoint,
-                      // Use for remove points from svg
-                      unvisiblePoints: true,
-                    ),
-                  ),
-                ),
-              ),
-      );
+  // An example of how to turn on an object's blinking
+  void searchObjects<T extends FloorItem>({final FloorSubTypes? subType}) {
+    _listWidgets = _listWidgets.map((final item) {
+      if (item.item is T && (subType == null || subType == item.item.subType)) {
+        return item.copyWith(isActiveBlinking: true);
+      }
+
+      return item.copyWith(isActiveBlinking: false);
+    }).toList();
+
+    setState(() {});
+  }
+
+  // An example of obtaining information and building a route
+  Future<void> _handleFloorItemTap(final FloorItem floorItem) async {
+    await ExampleBottomSheet.showBottomSheet(
+      context,
+      floorItem,
+      () => _setStartPoint(floorItem),
+      () => _setEndPoint(floorItem),
+    );
+  }
+
+  void _setStartPoint(final FloorItem floorItem) {
+    setState(() {
+      _startPointItem = floorItem;
+    });
+  }
+
+  void _setEndPoint(final FloorItem floorItem) {
+    setState(() {
+      _endPointItem = floorItem;
+    });
+  }
 }
 
 void main() async {

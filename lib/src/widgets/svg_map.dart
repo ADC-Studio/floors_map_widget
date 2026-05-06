@@ -5,7 +5,8 @@ import 'package:vector_graphics/vector_graphics_compat.dart';
 import 'package:vector_graphics_compiler/vector_graphics_compiler.dart';
 
 enum RenderStrategy { picture, raster }
-enum SvgSource{string, asset, compiled}
+
+enum SvgSource { string, asset, compiled }
 
 class SvgMapRenderProperties {
   dynamic svgData;
@@ -14,11 +15,14 @@ class SvgMapRenderProperties {
   RenderingStrategy renderingStrategy;
   Widget? loadingPlaceholder;
 
+  double renderquality = 1.0;
+
   SvgMapRenderProperties({
     required this.svgData,
     required this.svgSource,
     required this.mapSize,
     this.loadingPlaceholder,
+    this.renderquality = 5.0,
     final RenderStrategy? renderingStrategy = RenderStrategy.raster,
   }) : renderingStrategy = renderingStrategy == RenderStrategy.raster
             ? RenderingStrategy.raster
@@ -29,12 +33,14 @@ class SvgMapRenderProperties {
     final SvgSource? svgSource,
     final Size? mapSize,
     final Widget? loadingPlaceholder,
+    final double? renderquality,
     final RenderStrategy? renderingStrategy,
   }) =>
       SvgMapRenderProperties(
-        svgSource: svgSource?? this.svgSource,
+        svgSource: svgSource ?? this.svgSource,
         svgData: svgData ?? this.svgData,
         mapSize: mapSize ?? this.mapSize,
+        renderquality: renderquality ?? this.renderquality,
         loadingPlaceholder: loadingPlaceholder ?? this.loadingPlaceholder,
         renderingStrategy: renderingStrategy ??
             (this.renderingStrategy == RenderingStrategy.raster
@@ -45,16 +51,17 @@ class SvgMapRenderProperties {
   dynamic get svg => svgData;
   SvgSource get source => svgSource;
   Size? get size => mapSize;
+  double get quality => renderquality;
   RenderingStrategy get strategy => renderingStrategy;
   Widget? get loading => loadingPlaceholder;
 
   set svg(final svg) => svgData = svg;
   set size(final Size? size) => mapSize = size;
-  set source(final SvgSource strategy) =>
-      source= strategy;
+  set source(final SvgSource strategy) => svgSource = strategy;
   set strategy(final RenderingStrategy strategy) =>
       renderingStrategy = strategy;
   set loading(final Widget? widget) => loadingPlaceholder = widget;
+  set quality(final double quality) => renderquality = quality;
 }
 
 class SvgMap extends StatefulWidget {
@@ -78,15 +85,12 @@ class _SvgMapState extends State<SvgMap> {
     _loadSvg();
   }
 
-
   void _loadSvg() {
-
-    _vectorLoader = switch(currentRenderProperties.source){
+    _vectorLoader = switch (currentRenderProperties.source) {
       SvgSource.string => SvgStringLoader(currentRenderProperties.svg),
       SvgSource.asset => SvgAssetLoader(currentRenderProperties.svg),
       SvgSource.compiled => AssetBytesLoader(currentRenderProperties.svg),
     };
-
   }
 
   @override

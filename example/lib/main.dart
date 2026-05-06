@@ -32,17 +32,37 @@ class _SvgMapExampleState extends State<SvgMapExample> {
   final TransformationController _transformationController =
       TransformationController();
 
-  double renderDirection = 1 / 1;
+  double renderQualityt = 1 / 1;
+  double lastScale = 1.0;
 
   void _onScaleEnd(final ScaleEndDetails details) {
     final double currentScale =
         _transformationController.value.getMaxScaleOnAxis();
-    final double newDirection = currentScale >= 5.0 ? 1 : (1 / 1);
-    if (newDirection != renderDirection) {
+
+    if (currentScale == lastScale) {
+      return; // No change in scale, so no need to update
+    }
+
+    // Calculate desired quality based on zoom level
+    double newQuality;
+
+    if (currentScale <= 1.0) {
+      newQuality = 1.0;
+    } else if (currentScale <= 3.0) {
+      newQuality = 1.0;
+    } else if (currentScale <= 12.0) {
+      newQuality = 5.0;
+    } else {
+      newQuality = 8.0;
+    }
+
+    // Only update if quality actually changed
+    if (newQuality != renderPropertiesNotifier.value.quality) {
       renderPropertiesNotifier.value = renderPropertiesNotifier.value.copyWith(
-        mapSize: renderPropertiesNotifier.value.mapSize! * newDirection,
+        renderquality: newQuality,
       );
-      renderDirection = newDirection;
+      renderQualityt = newQuality; // Store quality instead of direction
+      lastScale = currentScale; // Store current scale for next comparison
     }
   }
 
@@ -109,6 +129,7 @@ class _SvgMapExampleState extends State<SvgMapExample> {
               svgData: compiledSVGAsset,
               svgSource: SvgSource.compiled,
               renderingStrategy: RenderStrategy.picture,
+              renderquality: renderQualityt,
             ),
           );
         },
@@ -138,23 +159,23 @@ class _SvgMapExampleState extends State<SvgMapExample> {
                   onInteractionEnd: _onScaleEnd,
                   maxScale: 20,
                   minScale: 1,
-                  child: RepaintBoundary(
-                    child: FloorMapWidget(
-                      // String from SVG Map
-                      _svgContent!,
-                      // Floors widgets
-                      _listWidgets,
-                      points!,
-                      renderPropertiesNotifier: renderPropertiesNotifier,
-                      transformationController: _transformationController,
-                      // reRenderToogle: reRenderTooggle,
-                      // Use for build a route
-                      startIdPoint: _startPointItem?.idPoint,
-                      endIdPoint: _endPointItem?.idPoint,
-                      // Use for remove points from svg
-                      unvisiblePoints: true,
-                    ),
+                  // child: RepaintBoundary(
+                  child: FloorMapWidget(
+                    // String from SVG Map
+                    _svgContent!,
+                    // Floors widgets
+                    _listWidgets,
+                    points!,
+                    renderPropertiesNotifier: renderPropertiesNotifier,
+                    transformationController: _transformationController,
+                    // reRenderToogle: reRenderTooggle,
+                    // Use for build a route
+                    startIdPoint: _startPointItem?.idPoint,
+                    endIdPoint: _endPointItem?.idPoint,
+                    // Use for remove points from svg
+                    unvisiblePoints: true,
                   ),
+                  // ),
                 ),
               ),
       );

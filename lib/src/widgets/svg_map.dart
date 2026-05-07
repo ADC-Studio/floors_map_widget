@@ -2,14 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:vector_graphics/vector_graphics_compat.dart';
-import 'package:vector_graphics_compiler/vector_graphics_compiler.dart';
 
 enum RenderStrategy { picture, raster }
 
 enum SvgSource { string, asset, compiled }
 
 class SvgMapRenderProperties {
+  // The SVG data, which can be a string, an asset path for .svg files, or asset path for compiled .vg files, depending on the source type.
   dynamic svgData;
+  // The source type of the SVG data (string, asset simple, or asset compiled).
   SvgSource svgSource;
   Size? mapSize;
   RenderingStrategy renderingStrategy;

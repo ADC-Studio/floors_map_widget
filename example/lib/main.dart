@@ -76,7 +76,7 @@ class _SvgMapExampleState extends State<SvgMapExample> {
 
   @override
   void dispose() {
-    _transformationController..dispose();
+    _transformationController.dispose();
     super.dispose();
   }
 
@@ -153,29 +153,27 @@ class _SvgMapExampleState extends State<SvgMapExample> {
         body: _svgContent == null
             ? const Center(child: CircularProgressIndicator())
             : SafeArea(
-                // TODO: Evaluate changing draw strategy to layers (use builder to only draw visible part)
                 child: InteractiveViewer(
                   transformationController: _transformationController,
                   onInteractionEnd: _onScaleEnd,
                   maxScale: 20,
                   minScale: 1,
-                  // child: RepaintBoundary(
-                  child: FloorMapWidget(
-                    // String from SVG Map
-                    _svgContent!,
-                    // Floors widgets
-                    _listWidgets,
-                    points!,
-                    renderPropertiesNotifier: renderPropertiesNotifier,
-                    transformationController: _transformationController,
-                    // reRenderToogle: reRenderTooggle,
-                    // Use for build a route
-                    startIdPoint: _startPointItem?.idPoint,
-                    endIdPoint: _endPointItem?.idPoint,
-                    // Use for remove points from svg
-                    unvisiblePoints: true,
+                  child: RepaintBoundary(
+                    child: FloorMapWidget(
+                      // String from SVG Map
+                      _svgContent!,
+                      // Floors widgets
+                      _listWidgets,
+                      points!,
+                      renderPropertiesNotifier: renderPropertiesNotifier,
+                      transformationController: _transformationController,
+                      // Use for build a route
+                      startIdPoint: _startPointItem?.idPoint,
+                      endIdPoint: _endPointItem?.idPoint,
+                      // Use for remove points from svg (not longer used)
+                      unvisiblePoints: true,
+                    ),
                   ),
-                  // ),
                 ),
               ),
       );

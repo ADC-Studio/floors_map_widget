@@ -9,7 +9,6 @@ class FloorMapWidget extends StatefulWidget {
   final bool unvisiblePoints;
   final int? startIdPoint;
   final int? endIdPoint;
-  // final ValueNotifier<bool> reRenderToogle;
   final ValueNotifier<SvgMapRenderProperties> renderPropertiesNotifier;
   final TransformationController transformationController;
 
@@ -18,7 +17,6 @@ class FloorMapWidget extends StatefulWidget {
     this.svgContent,
     this.listItemsWidgets,
     this.listPoints, {
-    // required this.reRenderToogle,
     required this.renderPropertiesNotifier,
     required this.transformationController,
     this.unvisiblePoints = false,
@@ -77,15 +75,14 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
 
           return Stack(
             children: [
-              /// --- Static SVG Map (rarely changes) ---
-              // RepaintBoundary(
-              //   child:
-              TiledSvgMap.listenable(
-                // SvgMap.listenable(
-                widget.renderPropertiesNotifier,
-                widget.transformationController,
+              /// --- Static SVG Map ---
+              RepaintBoundary(
+                child: TiledSvgMap.listenable(
+                  // SvgMap.listenable(
+                  widget.renderPropertiesNotifier,
+                  widget.transformationController,
+                ),
               ),
-              // ),
 
               /// --- Interactive Items (change independently) ---
               RepaintBoundary(

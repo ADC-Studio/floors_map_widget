@@ -27,6 +27,7 @@ class FloorMapWidget extends StatefulWidget {
 
   @override
   State<FloorMapWidget> createState() => _FloorMapWidgetState();
+
 }
 
 class _FloorMapWidgetState extends State<FloorMapWidget> {
@@ -81,6 +82,7 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
                   // SvgMap.listenable(
                   widget.renderPropertiesNotifier,
                   widget.transformationController,
+                  unvisiblePoints: widget.unvisiblePoints,
                 ),
               ),
 

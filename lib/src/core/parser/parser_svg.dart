@@ -76,15 +76,19 @@ class FloorSvgParser {
     buffer.write(hexString.replaceFirst('#', ''));
     return Color(int.parse(buffer.toString(), radix: 16));
   }
-  static final pointPathCoorsRegex = RegExp(r'M ?(-?\d+\.?\d*)[, ]+(-?\d+\.?\d*)');
+
+  static final pointPathCoorsRegex =
+      RegExp(r'M ?(-?\d+\.?\d*)[, ]+(-?\d+\.?\d*)');
+
   /// Extracts the x and y coordinates from a SVG path 'd' attribute.
   ///
   /// Assumes the path starts with a 'M' command followed by x and y values.
   Map<String, String> getCoordinatesFromPath(final String pathData) {
     // Fixed to support cordinates separated by comma ("M 0,708.66 H 868.072 V 0 H 0 Z")
     final data = FloorSvgParser.pointPathCoorsRegex.firstMatch(pathData);
-    if (data == null){
-      throw FloorParserSvgException('Could not match coordinates from Point path: $pathData. Pattern: ${FloorSvgParser.pointPathCoorsRegex.pattern}');
+    if (data == null) {
+      throw FloorParserSvgException(
+          'Could not match coordinates from Point path: $pathData. Pattern: ${FloorSvgParser.pointPathCoorsRegex.pattern}');
     }
     final x = data!.group(1);
     final y = data.group(2);
@@ -139,22 +143,24 @@ class FloorSvgParser {
     }
     return path;
   }
+
   static final svgCommandPathRegex = RegExp(r'([MLHVCZ])\s*([^A-Za-z]*)');
   static final svgCommandSeparatorRegex = RegExp(r'\s+|,');
+
   /// Parses the SVG path commands from the path data string.
   ///
   /// Returns a list of [PathInstruction] objects.
   List<PathInstruction> _parsePathCommands(final String pathData) {
-
     final List<PathInstruction> pathDataMap = [];
 
-    final svgCommandMatches = FloorSvgParser.svgCommandPathRegex.allMatches(pathData);
+    final svgCommandMatches =
+        FloorSvgParser.svgCommandPathRegex.allMatches(pathData);
 
     // Iterate through all matches of the regex in the path data.
     for (final match in svgCommandMatches) {
-      final String command = match.group(1)!.trim()!; // command group will never be null
-      final String coordinatesSegment = (match.group(2)?? '').trim();
-
+      final String command =
+          match.group(1)!.trim()!; // command group will never be null
+      final String coordinatesSegment = (match.group(2) ?? '').trim();
 
       // Skip processing if there are no coordinates and it's not a 'Z' command
       if (command.toLowerCase() != 'z' && coordinatesSegment.trim().isEmpty) {
@@ -164,28 +170,41 @@ class FloorSvgParser {
 
       try {
         // List with all coordinates (x & y) present in the command
-        final List<double> coords= command.toLowerCase() == 'z' ? [] 
-              : coordinatesSegment!.trim().split(FloorSvgParser.svgCommandSeparatorRegex).map(
-                double.parse).toList();
+        final List<double> coords = command.toLowerCase() == 'z'
+            ? []
+            : coordinatesSegment!
+                .trim()
+                .split(FloorSvgParser.svgCommandSeparatorRegex)
+                .map(double.parse)
+                .toList();
 
         // Handle abbreviated commands if present
         if (command == 'M' || command == 'm') {
           // Handle abbreviated Move: first pair is M, subsequent pairs are L
           for (int i = 0; i < coords.length; i += 2) {
-            final String effectiveCmd = (i == 0) ? command : (command == 'M' ? 'L' : 'l');
-            pathDataMap.add(PathInstruction(effectiveCmd, [coords[i], coords[i + 1]]));
+            final String effectiveCmd =
+                (i == 0) ? command : (command == 'M' ? 'L' : 'l');
+            pathDataMap
+                .add(PathInstruction(effectiveCmd, [coords[i], coords[i + 1]]));
           }
-        } else if (command == 'L' || command == 'l' || command == 'T' || command == 't') {
+        } else if (command == 'L' ||
+            command == 'l' ||
+            command == 'T' ||
+            command == 't') {
           // Expand abbreviated Lines/Smooth Quadratics (pairs of 2)
           for (int i = 0; i < coords.length; i += 2) {
-            pathDataMap.add(PathInstruction(command, [coords[i], coords[i + 1]]));
+            pathDataMap
+                .add(PathInstruction(command, [coords[i], coords[i + 1]]));
           }
         } else if (command == 'C' || command == 'c') {
           // Expand abbreviated Cubics (groups of 6)
           for (int i = 0; i < coords.length; i += 6) {
             pathDataMap.add(PathInstruction(command, coords.sublist(i, i + 6)));
           }
-        } else if (command == 'S' || command == 's' || command == 'Q' || command == 'q') {
+        } else if (command == 'S' ||
+            command == 's' ||
+            command == 'Q' ||
+            command == 'q') {
           // Expand abbreviated Smooth Cubics/Quadratics (groups of 4)
           for (int i = 0; i < coords.length; i += 4) {
             pathDataMap.add(PathInstruction(command, coords.sublist(i, i + 4)));
@@ -194,33 +213,28 @@ class FloorSvgParser {
           // H, V, and Z (or single-param commands)
           pathDataMap.add(PathInstruction(command, coords));
         }
-        
       } catch (e) {
         throw FloorParserSvgException('Error parsing path commands: $e');
       }
-    
     }
 
     return pathDataMap;
   }
 
-  /// Retrieves the dimensions (width and height) of the SVG.
-  // Size _getDimensions() {
-  //   final svgElement = document.findElements('svg').first;
-  //   final width = double.parse(svgElement.getAttribute('width') ?? '0');
-  //   final height = double.parse(svgElement.getAttribute('height') ?? '0');
-  //   return Size(width, height);
-  // }
   Size _getDimensions() {
     final svgElement = document.findAllElements('svg').first;
     final viewBox = svgElement.getAttribute('viewBox');
 
     if (viewBox != null && viewBox.isNotEmpty) {
       // viewBox format: "min-x min-y width height"
-      final parts = viewBox.split(RegExp(r'\s+|,')).where((s) => s.isNotEmpty).map(double.parse).toList();
+      final parts = viewBox
+          .split(RegExp(r'\s+|,'))
+          .where((s) => s.isNotEmpty)
+          .map(double.parse)
+          .toList();
       if (parts.length == 4) {
         // Return the internal coordinate width/height
-        return Size(parts[2], parts[3]); 
+        return Size(parts[2], parts[3]);
       }
     }
 
@@ -242,26 +256,6 @@ class FloorSvgParser {
     final height = parseDimension(svgElement.getAttribute('height'));
     return Size(width, height);
   }
-//   Size _getDimensions() {
-//     final svgElement = document.findElements('svg').first;
-
-//     double parseDimension(String? raw) {
-//       if (raw == null || raw.isEmpty) return 0;
-//       final match = RegExp(r'([\d.]+)').firstMatch(raw);
-//       if (match == null) return 0;
-//       final value = double.parse(match.group(1)!);
-
-//       // Optionally handle mm/cm/in to px
-//       if (raw.contains('mm')) return value * 3.7795275591; // 1mm ≈ 3.78px
-//       if (raw.contains('cm')) return value * 37.795275591;
-//       if (raw.contains('in')) return value * 96.0;
-//       return value;
-//     }
-
-//     final width = parseDimension(svgElement.getAttribute('width'));
-//     final height = parseDimension(svgElement.getAttribute('height'));
-//     return Size(width, height);
-// }
 
   /// Extracts the floor number from the SVG's 'id' attribute.
   int _getFloorNumber() {
@@ -281,14 +275,11 @@ class FloorSvgParser {
   ///
   /// Throws an exception if the element is not found.
   Path getPaths(final String key) {
-
     // A bit more performant
     final pathElement = document.findAllElements('path').firstWhere(
-      (element) => element.getAttribute('id') == key,
-      orElse: () => 
-        throw FloorParserSvgException('Element with id "$key" not found in getPaths.')
-     
-    );
+        (final element) => element.getAttribute('id') == key,
+        orElse: () => throw FloorParserSvgException(
+            'Element with id "$key" not found in getPaths.'));
 
     final d = pathElement.getAttribute('d') ?? '';
     return parsePathData(d);
@@ -390,9 +381,9 @@ class FloorSvgParser {
       }
 
       // Recursively traverse child elements.
-      element.children.whereType<XmlElement>()
-        .forEach((child) => traverseElements(child, supportedTypes));
-
+      element.children
+          .whereType<XmlElement>()
+          .forEach((final child) => traverseElements(child, supportedTypes));
     }
 
     // Start traversal from the root element.
@@ -406,11 +397,13 @@ class FloorSvgParser {
     return pointList;
   }
 
-  static final buildingIdRegex = RegExp(r'^((?!point-)[a-zA-Z]+)-(?:([a-zA-Z]+)-)?(\d+)=([\d]+)$');
+  static final buildingIdRegex =
+      RegExp(r'^((?!point-)[a-zA-Z]+)-(?:([a-zA-Z]+)-)?(\d+)=([\d]+)$');
   static final pointIdRegex = RegExp(r'^point-(\d+)(?:=([\d-]*))?$');
 
   /// Receives a building element ID and returns its components.
-  static ({String? type, String? subtype, int? id, List<int> linkedIds}) parseBuildingId(String? idAttr) {
+  static ({String? type, String? subtype, int? id, List<int> linkedIds})
+      parseBuildingId(final String? idAttr) {
     // If the element does not have id, return default empty set
     if ((idAttr ?? '').isEmpty) {
       return (type: null, subtype: null, id: null, linkedIds: []);
@@ -423,20 +416,21 @@ class FloorSvgParser {
     }
 
     // Extract components using group indices
-    final String? buildingType = match.group(1);     // e.g., "stairs", "shop"
-    final String? buildingSubtype = match.group(2);  // e.g., "elevator", "male" or null
-    final String? uniqueIdStr = match.group(3);      // ID as string
-    final String? connectionsStr = match.group(4);   // Connections as string
+    final String? buildingType = match.group(1); // e.g., "stairs", "shop"
+    final String? buildingSubtype =
+        match.group(2); // e.g., "elevator", "male" or null
+    final String? uniqueIdStr = match.group(3); // ID as string
+    final String? connectionsStr = match.group(4); // Connections as string
 
     // Parse unique ID
-    final int? uniqueIdNumber =  int.tryParse(uniqueIdStr ?? '');
+    final int? uniqueIdNumber = int.tryParse(uniqueIdStr ?? '');
 
-    // Parse linked elements (splitting by '-') (As of now regex only matches one linked id 
+    // Parse linked elements (splitting by '-') (As of now regex only matches one linked id
     //  (we might support more than one entrace in the future) )
     final List<int> linkedElementsIdList = [];
     if ((connectionsStr ?? '').isNotEmpty) {
       // split('-') and map to integers
-      for (var linkedId in connectionsStr!.split('-')) {
+      for (final linkedId in connectionsStr!.split('-')) {
         final parsed = int.tryParse(linkedId);
         if (parsed != null) {
           linkedElementsIdList.add(parsed);
@@ -456,130 +450,95 @@ class FloorSvgParser {
   /// Throws an exception if no such elements are found.
   List<FloorItem> getItems() {
     final List<FloorItem> floorItems = [];
-    
+
     // Find all the path elements that are floorItems (elements whose id matches the building regex)
-    final pathElements = document.findAllElements('path');
+    document.findAllElements('path').forEach((final XmlElement svgPath) {
+      final String fullKey = (svgPath.getAttribute('id') ?? '').trim();
 
-    pathElements.forEach((final XmlElement svgPath){
-        final String fullKey = (svgPath.getAttribute('id') ?? '').trim();
+      // not a building / floorItem
+      if (fullKey.isEmpty || !buildingIdRegex.hasMatch(fullKey)) {
+        return;
+      }
 
-        // not a building / floorItem
-        if (fullKey.isEmpty || !buildingIdRegex.hasMatch(fullKey)) {
-          return;
-        }
+      final buildingAttributes = parseBuildingId(fullKey);
 
-        var buildingAttributes = parseBuildingId(fullKey);
+      final int itemId = buildingAttributes.id!;
+      // For now we onlly support 1 point id
+      final int pointId = buildingAttributes.linkedIds[0];
 
-        final int itemId = buildingAttributes.id!;
-        // For now we onlly support 1 point id
-        final int pointId = buildingAttributes.linkedIds[0];
-
-        // TODO: Think a way to refactor the API so that the client can define its own
-        //  supported buildings 
-        // Check if the main type is supported.
-        final String keyMainType = buildingAttributes.type!;
-        if (!SupportedClasses.regexpCheckSupported.hasMatch(keyMainType)) {
-          return;
-        }
-        final drawingInstructions = DrawingInstructions(
-          clickableArea: getPaths(fullKey),
-          sizeParentSvg: svgSize,
-          // Will add colorFill and colorStroke configuration in new versions.
-          // colorFill: getColorFill(fullKey),
-          // colorStroke: getColorStroke(fullKey),
-        );
-        // Create the appropriate FloorItem based on the main type.
-        switch (SupportedClasses.fromString(keyMainType)) {
-          case SupportedClasses.shop:
-            floorItems.add(
-              FloorShop(
-                id: itemId,
-                floor: floorNumber!,
-                idPoint: pointId,
-                drawingInstructions: drawingInstructions,
-              ),
-            );
-          case SupportedClasses.parkingSpace:
-            floorItems.add(
-              FloorParkingSpace(
-                id: itemId,
-                idPoint: pointId,
-                drawingInstructions: drawingInstructions,
-                floor: floorNumber!,
-              ),
-            );
-          case SupportedClasses.atmMachine:
-            floorItems.add(
-              FloorAtmMachine(
-                id: itemId,
-                idPoint: pointId,
-                drawingInstructions: drawingInstructions,
-                floor: floorNumber!,
-              ),
-            );
-          case SupportedClasses.toilet:
-            floorItems.add(
-              FloorHygieneZone(
-                id: itemId,
-                idPoint: pointId,
-                drawingInstructions: drawingInstructions,
-                floor: floorNumber!,
-                subType: FloorHygieneZoneType.fromString(buildingAttributes.subtype!),
-              ),
-            );
-          case SupportedClasses.stairs:
-            floorItems.add(
-              FloorStairs(
-                id: itemId,
-                idPoint: pointId,
-                drawingInstructions: drawingInstructions,
-                floor: floorNumber!,
-                subType: FloorStairsType.fromString(buildingAttributes.subtype!),
-              ),
-            );
-          // Handle unsupported classes.
-          // ignore: no_default_cases
-          default:
-            throw FloorParserSvgException(
-              'Unsupported class type: '
-              '$keyMainType',
-            );
-        }
-
-
-
-
-
+      // TODO: Think a way to refactor the API so that the client can define its own
+      //  supported buildings
+      // Check if the main type is supported.
+      final String keyMainType = buildingAttributes.type!;
+      if (!SupportedClasses.regexpCheckSupported.hasMatch(keyMainType)) {
+        return;
+      }
+      final drawingInstructions = DrawingInstructions(
+        clickableArea: getPaths(fullKey),
+        sizeParentSvg: svgSize,
+        // Will add colorFill and colorStroke configuration in new versions.
+        // colorFill: getColorFill(fullKey),
+        // colorStroke: getColorStroke(fullKey),
+      );
+      // Create the appropriate FloorItem based on the main type.
+      switch (SupportedClasses.fromString(keyMainType)) {
+        case SupportedClasses.shop:
+          floorItems.add(
+            FloorShop(
+              id: itemId,
+              floor: floorNumber!,
+              idPoint: pointId,
+              drawingInstructions: drawingInstructions,
+            ),
+          );
+        case SupportedClasses.parkingSpace:
+          floorItems.add(
+            FloorParkingSpace(
+              id: itemId,
+              idPoint: pointId,
+              drawingInstructions: drawingInstructions,
+              floor: floorNumber!,
+            ),
+          );
+        case SupportedClasses.atmMachine:
+          floorItems.add(
+            FloorAtmMachine(
+              id: itemId,
+              idPoint: pointId,
+              drawingInstructions: drawingInstructions,
+              floor: floorNumber!,
+            ),
+          );
+        case SupportedClasses.toilet:
+          floorItems.add(
+            FloorHygieneZone(
+              id: itemId,
+              idPoint: pointId,
+              drawingInstructions: drawingInstructions,
+              floor: floorNumber!,
+              subType:
+                  FloorHygieneZoneType.fromString(buildingAttributes.subtype!),
+            ),
+          );
+        case SupportedClasses.stairs:
+          floorItems.add(
+            FloorStairs(
+              id: itemId,
+              idPoint: pointId,
+              drawingInstructions: drawingInstructions,
+              floor: floorNumber!,
+              subType: FloorStairsType.fromString(buildingAttributes.subtype!),
+            ),
+          );
+        // Handle unsupported classes.
+        // ignore: no_default_cases
+        default:
+          throw FloorParserSvgException(
+            'Unsupported class type: '
+            '$keyMainType',
+          );
+      }
     });
-
-    
-
-    // Recursive function to process XML elements.
-    // void processElement(final XmlElement element) {
-    //   final String fullKey = (element.getAttribute('id') ?? '').trim();
-
-
-    //   // Skip elements that do not contain '-', '=', or are not 'path' elements.
-    //   if (!fullKey.contains('-') ||
-    //       !fullKey.contains('=') ||
-    //       element.localName != 'path') {
-    //     element.children.whereType<XmlElement>().forEach(processElement);
-    //     return;
-    //   }
-
-    //   final List<String> mainParts = fullKey.split('=');
-    //   final List<String> partsWithoutPoint = mainParts[0].split('-');
-    //   final String keyMainType = partsWithoutPoint[0];
-
-    //   // Skip if the main type is 'point'.
-    //   if (keyMainType == 'point') {
-    //     element.children.whereType<XmlElement>().forEach(processElement);
-    //     return;
-    //   }
-    //   // Recursively process child elements.
-    //   element.children.whereType<XmlElement>().forEach(processElement);
-    // }
-
 
     if (floorItems.isEmpty) {
       throw const FloorParserSvgException(
@@ -589,5 +548,24 @@ class FloorSvgParser {
     }
 
     return floorItems;
+  }
+
+  /// Removes elements with an 'id' containing 'point' from the SVG content.
+  static String cleanPointsFromMap(final String svgContent) {
+    final document = XmlDocument.parse(svgContent);
+    final regex = RegExp(r'\bpoint[-=]', caseSensitive: false);
+    // Find all elements whose 'id' attribute contains 'point'.
+    final elementsToRemove =
+        document.findAllElements('*').where((final element) {
+      final String? id = element.getAttribute('id');
+      return id != null && regex.hasMatch(id);
+    }).toList();
+
+    // Remove each element from its parent.
+    for (final element in elementsToRemove) {
+      element.parent?.children.remove(element);
+    }
+
+    return document.toXmlString(pretty: true);
   }
 }

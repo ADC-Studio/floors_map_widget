@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:floors_map_widget/floors_map_widget.dart'
-    show SvgMapRenderProperties;
+    show FloorSvgParser, SvgMapRenderProperties;
 import 'package:floors_map_widget/src/widgets/svg_map.dart' show SvgSource;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -30,11 +30,13 @@ class TiledSvgMap extends StatefulWidget {
   final ValueListenable<SvgMapRenderProperties> renderPropertiesListenable;
   // The TransformationController from the parent InteractiveViewer, used to calculate visible tiles
   final TransformationController transformationController;
+  final bool unvisiblePoints;
 
   const TiledSvgMap.listenable(
     this.renderPropertiesListenable,
     this.transformationController, {
     super.key,
+    this.unvisiblePoints = false,
   });
 
   @override
@@ -50,6 +52,8 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   final Map<_TileKey, ui.Image> _tileCache = {};
   final double _tileSize = 512.0; //  of 2^n for better GPU performance
 
+  String? cleanedSvgData; // Store cleaned SVG data if unvisiblePoints is true
+
   @override
   void initState() {
     super.initState();
@@ -59,8 +63,15 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   }
 
   void _loadSvg() {
+    // if unvisiblePoints is true, clean the SVG content from point elements
+    // before loading only when the SVG source is a string (not asset or compiled)
+    cleanedSvgData = (widget.unvisiblePoints &&
+            currentRenderProperties.source == SvgSource.string)
+        ? FloorSvgParser.cleanPointsFromMap(currentRenderProperties.svg)
+        : currentRenderProperties.svg;
+
     _vectorLoader = switch (currentRenderProperties.source) {
-      SvgSource.string => SvgStringLoader(currentRenderProperties.svg),
+      SvgSource.string => SvgStringLoader(cleanedSvgData!),
       SvgSource.asset => SvgAssetLoader(currentRenderProperties.svg),
       SvgSource.compiled => AssetBytesLoader(currentRenderProperties.svg),
     };

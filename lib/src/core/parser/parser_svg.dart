@@ -84,13 +84,15 @@ class FloorSvgParser {
   ///
   /// Assumes the path starts with a 'M' command followed by x and y values.
   Map<String, String> getCoordinatesFromPath(final String pathData) {
-    // Fixed to support cordinates separated by comma ("M 0,708.66 H 868.072 V 0 H 0 Z")
+    // Fixed to support cordinates separated by comma.
     final data = FloorSvgParser.pointPathCoorsRegex.firstMatch(pathData);
     if (data == null) {
       throw FloorParserSvgException(
-          'Could not match coordinates from Point path: $pathData. Pattern: ${FloorSvgParser.pointPathCoorsRegex.pattern}');
+        'Could not match coordinates from Point path: $pathData. '
+        'Pattern: ${FloorSvgParser.pointPathCoorsRegex.pattern}',
+      );
     }
-    final x = data!.group(1);
+    final x = data.group(1);
     final y = data.group(2);
     return {
       'x': x!,
@@ -158,8 +160,8 @@ class FloorSvgParser {
 
     // Iterate through all matches of the regex in the path data.
     for (final match in svgCommandMatches) {
-      final String command =
-          match.group(1)!.trim()!; // command group will never be null
+      // command group will never be null
+      final String command = match.group(1)!.trim();
       final String coordinatesSegment = (match.group(2) ?? '').trim();
 
       // Skip processing if there are no coordinates and it's not a 'Z' command
@@ -172,8 +174,7 @@ class FloorSvgParser {
         // List with all coordinates (x & y) present in the command
         final List<double> coords = command.toLowerCase() == 'z'
             ? []
-            : coordinatesSegment!
-                .trim()
+            : coordinatesSegment
                 .split(FloorSvgParser.svgCommandSeparatorRegex)
                 .map(double.parse)
                 .toList();
@@ -229,7 +230,7 @@ class FloorSvgParser {
       // viewBox format: "min-x min-y width height"
       final parts = viewBox
           .split(RegExp(r'\s+|,'))
-          .where((s) => s.isNotEmpty)
+          .where((final s) => s.isNotEmpty)
           .map(double.parse)
           .toList();
       if (parts.length == 4) {
@@ -238,16 +239,26 @@ class FloorSvgParser {
       }
     }
 
-    double parseDimension(String? raw) {
-      if (raw == null || raw.isEmpty) return 0;
+    double parseDimension(final String? raw) {
+      if (raw == null || raw.isEmpty) {
+        return 0;
+      }
       final match = RegExp(r'([\d.]+)').firstMatch(raw);
-      if (match == null) return 0;
+      if (match == null) {
+        return 0;
+      }
       final value = double.parse(match.group(1)!);
 
       // Optionally handle mm/cm/in to px
-      if (raw.contains('mm')) return value * 3.7795275591; // 1mm ≈ 3.78px
-      if (raw.contains('cm')) return value * 37.795275591;
-      if (raw.contains('in')) return value * 96.0;
+      if (raw.contains('mm')) {
+        return value * 3.7795275591;
+      }
+      if (raw.contains('cm')) {
+        return value * 37.795275591;
+      }
+      if (raw.contains('in')) {
+        return value * 96.0;
+      }
       return value;
     }
 
@@ -277,9 +288,11 @@ class FloorSvgParser {
   Path getPaths(final String key) {
     // A bit more performant
     final pathElement = document.findAllElements('path').firstWhere(
-        (final element) => element.getAttribute('id') == key,
-        orElse: () => throw FloorParserSvgException(
-            'Element with id "$key" not found in getPaths.'));
+          (final element) => element.getAttribute('id') == key,
+          orElse: () => throw FloorParserSvgException(
+            'Element with id "$key" not found in getPaths.',
+          ),
+        );
 
     final d = pathElement.getAttribute('d') ?? '';
     return parsePathData(d);
@@ -334,7 +347,10 @@ class FloorSvgParser {
     final supportedTypes = {'ellipse', 'circle', 'path'};
 
     // Recursive function to traverse XML elements.
-    void traverseElements(final XmlElement element, final supportedTypes) {
+    void traverseElements(
+      final XmlElement element,
+      final Set<String> supportedTypes,
+    ) {
       final localName = element.localName;
       if (supportedTypes.contains(localName)) {
         final String fullKey = (element.getAttribute('id') ?? '').trim();
@@ -425,12 +441,12 @@ class FloorSvgParser {
     // Parse unique ID
     final int? uniqueIdNumber = int.tryParse(uniqueIdStr ?? '');
 
-    // Parse linked elements (splitting by '-') (As of now regex only matches one linked id
-    //  (we might support more than one entrace in the future) )
+    // Parse linked elements. The current regex only matches one linked id,
+    // but this keeps supporting a future multi-id form.
     final List<int> linkedElementsIdList = [];
-    if ((connectionsStr ?? '').isNotEmpty) {
+    if (connectionsStr != null && connectionsStr.isNotEmpty) {
       // split('-') and map to integers
-      for (final linkedId in connectionsStr!.split('-')) {
+      for (final linkedId in connectionsStr.split('-')) {
         final parsed = int.tryParse(linkedId);
         if (parsed != null) {
           linkedElementsIdList.add(parsed);
@@ -451,8 +467,8 @@ class FloorSvgParser {
   List<FloorItem> getItems() {
     final List<FloorItem> floorItems = [];
 
-    // Find all the path elements that are floorItems (elements whose id matches the building regex)
-    document.findAllElements('path').forEach((final XmlElement svgPath) {
+    // Find path elements that are floorItems.
+    document.findAllElements('path').forEach((final svgPath) {
       final String fullKey = (svgPath.getAttribute('id') ?? '').trim();
 
       // not a building / floorItem
@@ -466,8 +482,7 @@ class FloorSvgParser {
       // For now we onlly support 1 point id
       final int pointId = buildingAttributes.linkedIds[0];
 
-      // TODO: Think a way to refactor the API so that the client can define its own
-      //  supported buildings
+      // TODO: Refactor the API so the client can define supported buildings.
       // Check if the main type is supported.
       final String keyMainType = buildingAttributes.type!;
       if (!SupportedClasses.regexpCheckSupported.hasMatch(keyMainType)) {
@@ -529,13 +544,6 @@ class FloorSvgParser {
               floor: floorNumber!,
               subType: FloorStairsType.fromString(buildingAttributes.subtype!),
             ),
-          );
-        // Handle unsupported classes.
-        // ignore: no_default_cases
-        default:
-          throw FloorParserSvgException(
-            'Unsupported class type: '
-            '$keyMainType',
           );
       }
     });

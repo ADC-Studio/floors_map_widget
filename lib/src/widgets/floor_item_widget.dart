@@ -117,7 +117,9 @@ class _FloorItemWidgetState extends State<FloorItemWidget>
     final offsetY = (size.height - instr.sizeParentSvg.height * scale) / 2;
 
     final matrix4 = Matrix4.identity()
+      // ignore: deprecated_member_use
       ..translate(offsetX, offsetY)
+      // ignore: deprecated_member_use
       ..scale(scale, scale, 1);
 
     pathWithOffset = instr.clickableArea.transform(matrix4.storage);
@@ -178,9 +180,8 @@ class _FloorItemWidgetState extends State<FloorItemWidget>
 
     // Resume blinking if it was active.
     if (_isBlinking) {
-      _animationController
-        ..duration = widget.durationBlink
-        ..repeat(reverse: true);
+      _animationController.duration = widget.durationBlink;
+      unawaited(_animationController.repeat(reverse: true));
     } else {
       _animationController.reset();
     }
@@ -192,7 +193,7 @@ class _FloorItemWidgetState extends State<FloorItemWidget>
         child: GestureDetector(
           // Supports InteractiveViewer and more.
           behavior: HitTestBehavior.translucent,
-          onTap: _handleTap,
+          onTap: () => unawaited(_handleTap()),
           child: AnimatedBuilder(
             animation: _animationController,
             builder: (final context, final child) => CustomPaint(

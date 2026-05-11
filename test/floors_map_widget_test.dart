@@ -135,6 +135,33 @@ void main() {
 
       expect(find.byType(FloorPathPainter), findsOneWidget);
     });
+
+    testWidgets('should render with tile debugging enabled',
+        (final tester) async {
+      final previousDebugPrint = debugPrint;
+      debugPrint = (
+        final message, {
+        final wrapWidth,
+      }) {};
+
+      try {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: FloorMapWidget(
+              svgTestContent,
+              [],
+              debugTiles: true,
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CustomPaint), findsWidgets);
+      } finally {
+        debugPrint = previousDebugPrint;
+      }
+    });
   });
 
   group('FloorPathPainter Tests', () {

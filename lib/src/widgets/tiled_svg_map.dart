@@ -26,18 +26,62 @@ class _TileKey {
   int get hashCode => Object.hash(col, row, scale);
 }
 
+class _TileDebugInfo {
+  final int cachedTiles;
+  final int pendingTiles;
+  final int generatedTiles;
+  final int prunedTiles;
+  final int cacheHits;
+  final int cacheMisses;
+  final String visibleRange;
+
+  const _TileDebugInfo({
+    required this.cachedTiles,
+    required this.pendingTiles,
+    required this.generatedTiles,
+    required this.prunedTiles,
+    required this.cacheHits,
+    required this.cacheMisses,
+    required this.visibleRange,
+  });
+
+  @override
+  bool operator ==(final Object other) =>
+      other is _TileDebugInfo &&
+      cachedTiles == other.cachedTiles &&
+      pendingTiles == other.pendingTiles &&
+      generatedTiles == other.generatedTiles &&
+      prunedTiles == other.prunedTiles &&
+      cacheHits == other.cacheHits &&
+      cacheMisses == other.cacheMisses &&
+      visibleRange == other.visibleRange;
+
+  @override
+  int get hashCode => Object.hash(
+        cachedTiles,
+        pendingTiles,
+        generatedTiles,
+        prunedTiles,
+        cacheHits,
+        cacheMisses,
+        visibleRange,
+      );
+}
+
 class TiledSvgMap extends StatefulWidget {
   // Provides the current SVG source, size, quality, and loading widget.
   final ValueListenable<SvgMapRenderProperties> renderPropertiesListenable;
   // Parent InteractiveViewer controller used to calculate visible tiles.
   final TransformationController transformationController;
   final bool unvisiblePoints;
+  final bool debugTiles;
 
   const TiledSvgMap.listenable(
     this.renderPropertiesListenable,
     this.transformationController, {
     super.key,
     this.unvisiblePoints = false,
+    this.debugTiles = false,
   });
 
   @override
@@ -59,6 +103,12 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   final Set<_TileKey> _pendingTiles = {};
   final double _tileSize = 512; // Power of two for better GPU performance.
   int _generationEpoch = 0;
+  int _tileVersion = 0;
+  int _generatedTiles = 0;
+  int _prunedTiles = 0;
+  int _debugCacheHits = 0;
+  int _debugCacheMisses = 0;
+  String _debugVisibleRange = 'none';
 
   String? cleanedSvgData; // Store cleaned SVG data if unvisiblePoints is true
 
@@ -90,7 +140,37 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     _loadedQuality = renderProperties.quality;
     _loadedHiddenPoints = widget.unvisiblePoints;
     _pictureFuture = null;
+    _resetDebugStats();
     _clearCache(notify: false);
+  }
+
+  _TileDebugInfo get _debugInfo => _TileDebugInfo(
+        cachedTiles: _tileCache.length,
+        pendingTiles: _pendingTiles.length,
+        generatedTiles: _generatedTiles,
+        prunedTiles: _prunedTiles,
+        cacheHits: _debugCacheHits,
+        cacheMisses: _debugCacheMisses,
+        visibleRange: _debugVisibleRange,
+      );
+
+  void _resetDebugStats() {
+    _generatedTiles = 0;
+    _prunedTiles = 0;
+    _debugCacheHits = 0;
+    _debugCacheMisses = 0;
+    _debugVisibleRange = 'none';
+  }
+
+  void _notifyTilesChanged() {
+    _tileVersion++;
+    _tileUpdateNotifier.value = _tileVersion;
+  }
+
+  void _debugLog(final String message) {
+    if (widget.debugTiles && kDebugMode) {
+      debugPrint('TiledSvgMap: $message');
+    }
   }
 
   Future<PictureInfo> _loadPicture(final BuildContext context) =>
@@ -167,16 +247,19 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
                   child: SizedBox(
                     width: mapContentSize.width,
                     height: mapContentSize.height,
-                    // Wrap ONLY the painter so it listens to tile updates
                     child: ValueListenableBuilder<int>(
                       valueListenable: _tileUpdateNotifier,
-                      builder: (final context, final _, final __) =>
+                      builder: (final context, final tileVersion, final __) =>
                           CustomPaint(
                         size: mapContentSize,
                         painter: _SvgTilePainter(
                           tileCache: _tileCache,
                           tileSize: _tileSize,
                           gridScale: rasterScale,
+                          tileVersion: tileVersion,
+                          repaint: _tileUpdateNotifier,
+                          debugTiles: widget.debugTiles,
+                          debugInfo: _debugInfo,
                         ),
                       ),
                     ),
@@ -253,6 +336,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
         (visibleRect.right / logicalTileSize).ceil().clamp(0, totalCols) - 1;
     final int endRow =
         (visibleRect.bottom / logicalTileSize).ceil().clamp(0, totalRows) - 1;
+    _debugVisibleRange = 'cols $startCol-$endCol, rows $startRow-$endRow';
 
     // Keep tiles within a x-tile radius of the current view
     // TODO: Allow caller to configure this radius
@@ -263,18 +347,25 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
 
     // Determine whether the visible tiles are already generated.
     bool needsGeneration = false;
+    int cacheHits = 0;
+    int cacheMisses = 0;
     for (int x = startCol; x <= endCol; x++) {
       for (int y = startRow; y <= endRow; y++) {
         final key = _TileKey(x, y, rasterScale);
-        if (!_tileCache.containsKey(key) && !_pendingTiles.contains(key)) {
+        if (_tileCache.containsKey(key) || _pendingTiles.contains(key)) {
+          cacheHits++;
+        } else {
+          cacheMisses++;
           needsGeneration = true;
-          break;
         }
       }
-      if (needsGeneration) {
-        break;
-      }
     }
+    _debugCacheHits = cacheHits;
+    _debugCacheMisses = cacheMisses;
+    _debugLog(
+      '$_debugVisibleRange, hits: $cacheHits, misses: $cacheMisses, '
+      'cached: ${_tileCache.length}, pending: ${_pendingTiles.length}',
+    );
 
     // Only generate if needed
     if (needsGeneration) {
@@ -291,6 +382,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
                 continue;
               }
               _pendingTiles.add(key);
+              _debugLog('generate tile col: $x, row: $y, scale: $rasterScale');
               await _generateTile(
                 x,
                 y,
@@ -340,7 +432,8 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
 
     _tileCache[key]?.dispose();
     _tileCache[key] = image;
-    _tileUpdateNotifier.value++; // Signal the painter to repaint
+    _generatedTiles++;
+    _notifyTilesChanged();
   }
 
   final ValueNotifier<int> _tileUpdateNotifier = ValueNotifier(0);
@@ -359,7 +452,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     }
     _tileCache.clear();
     if (notify && mounted) {
-      _tileUpdateNotifier.value++;
+      _notifyTilesChanged();
     }
   }
 
@@ -372,16 +465,22 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     final int rowDelta,
   ) {
     // Keep tiles within a x-tile radius of the current view
+    int prunedTiles = 0;
     _tileCache.removeWhere((final key, final image) {
       final bool isFar = key.col < startCol - colDelta ||
           key.col > endCol + colDelta ||
           key.row < startRow - rowDelta ||
           key.row > endRow + rowDelta;
       if (isFar) {
+        prunedTiles++;
         image.dispose();
       }
       return isFar;
     });
+    if (prunedTiles > 0) {
+      _prunedTiles += prunedTiles;
+      _debugLog('pruned $prunedTiles tiles');
+    }
   }
 
   @override
@@ -397,16 +496,27 @@ class _SvgTilePainter extends CustomPainter {
   final Map<_TileKey, ui.Image> tileCache;
   final double tileSize;
   final double gridScale;
+  final int tileVersion;
+  final bool debugTiles;
+  final _TileDebugInfo debugInfo;
 
   _SvgTilePainter({
     required this.tileCache,
     required this.tileSize,
     required this.gridScale,
-  });
+    required this.tileVersion,
+    required final Listenable repaint,
+    required this.debugTiles,
+    required this.debugInfo,
+  }) : super(repaint: repaint);
 
   @override
   void paint(final Canvas canvas, final Size size) {
     final paint = Paint()..filterQuality = ui.FilterQuality.high;
+    final debugBorderPaint = Paint()
+      ..color = const Color(0xFFFF3B30)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1 / gridScale.clamp(1, double.infinity);
 
     // Draw background to show map area
     canvas.drawRect(
@@ -418,24 +528,102 @@ class _SvgTilePainter extends CustomPainter {
       final double x = (key.col * tileSize) / gridScale;
       final double y = (key.row * tileSize) / gridScale;
       final double tileLogicalSize = tileSize / gridScale;
+      final tileRect = Rect.fromLTWH(
+        x,
+        y,
+        tileLogicalSize,
+        tileLogicalSize,
+      );
 
       canvas.drawImageRect(
         image,
         Rect.fromLTWH(0, 0, tileSize, tileSize), // Source (the high-res tile)
-        Rect.fromLTWH(
-          x,
-          y,
-          tileLogicalSize,
-          tileLogicalSize,
-        ), // Destination (the map area)
+        tileRect, // Destination (the map area)
         paint,
       );
+      if (debugTiles) {
+        canvas.drawRect(tileRect, debugBorderPaint);
+        _paintText(
+          canvas,
+          '${key.col},${key.row}\nscale ${key.scale.toStringAsFixed(1)}',
+          Offset(tileRect.left + 6 / gridScale, tileRect.top + 6 / gridScale),
+          fontSize: 12 / gridScale,
+        );
+      }
     });
+
+    if (debugTiles) {
+      _paintDebugPanel(canvas, size);
+    }
+  }
+
+  void _paintDebugPanel(final Canvas canvas, final Size size) {
+    const padding = 8.0;
+    const panelWidth = 220.0;
+    const panelHeight = 118.0;
+    final availableWidth = size.width - padding * 2;
+    if (availableWidth <= 0) {
+      return;
+    }
+    final panelRect = Rect.fromLTWH(
+      padding,
+      padding,
+      panelWidth.clamp(0, availableWidth).toDouble(),
+      panelHeight,
+    );
+    canvas
+      ..drawRect(
+        panelRect,
+        Paint()..color = const Color(0xCCFFFFFF),
+      )
+      ..drawRect(
+        panelRect,
+        Paint()
+          ..color = const Color(0xFF1E1E1E)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
+      );
+    _paintText(
+      canvas,
+      'tiles v$tileVersion\n'
+      'visible: ${debugInfo.visibleRange}\n'
+      'cache: ${debugInfo.cachedTiles}, pending: ${debugInfo.pendingTiles}\n'
+      'hits: ${debugInfo.cacheHits}, misses: ${debugInfo.cacheMisses}\n'
+      'generated: ${debugInfo.generatedTiles}, '
+      'pruned: ${debugInfo.prunedTiles}',
+      const Offset(padding + 8, padding + 8),
+      fontSize: 11,
+      backgroundColor: const Color(0x00000000),
+    );
+  }
+
+  void _paintText(
+    final Canvas canvas,
+    final String text,
+    final Offset offset, {
+    required final double fontSize,
+    final Color backgroundColor = const Color(0xCCFFFFFF),
+  }) {
+    TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: const Color(0xFF1E1E1E),
+          fontSize: fontSize,
+          backgroundColor: backgroundColor,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )
+      ..layout(maxWidth: 220)
+      ..paint(canvas, offset);
   }
 
   @override
   bool shouldRepaint(final _SvgTilePainter oldDelegate) =>
-      oldDelegate.tileCache != tileCache ||
+      oldDelegate.tileVersion != tileVersion ||
       oldDelegate.tileSize != tileSize ||
-      oldDelegate.gridScale != gridScale;
+      oldDelegate.gridScale != gridScale ||
+      oldDelegate.debugTiles != debugTiles ||
+      oldDelegate.debugInfo != debugInfo;
 }

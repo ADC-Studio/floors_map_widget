@@ -9,7 +9,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:vector_graphics/vector_graphics.dart';
 
 class _TileKey {
-  final int col, row;
+  final int col;
+  final int row;
   final double scale;
   _TileKey(this.col, this.row, this.scale);
 
@@ -26,9 +27,9 @@ class _TileKey {
 }
 
 class TiledSvgMap extends StatefulWidget {
-  // ValueListenable that provides the current SVG source, size, quality, and loading widget
+  // Provides the current SVG source, size, quality, and loading widget.
   final ValueListenable<SvgMapRenderProperties> renderPropertiesListenable;
-  // The TransformationController from the parent InteractiveViewer, used to calculate visible tiles
+  // Parent InteractiveViewer controller used to calculate visible tiles.
   final TransformationController transformationController;
   final bool unvisiblePoints;
 
@@ -48,9 +49,16 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   late BytesLoader _vectorLoader;
   // last used render properties to detect changes
   late SvgMapRenderProperties currentRenderProperties;
+  Future<PictureInfo>? _pictureFuture;
+  Object? _loadedSvg;
+  SvgSource? _loadedSource;
+  double? _loadedQuality;
+  bool _loadedHiddenPoints = false;
 
   final Map<_TileKey, ui.Image> _tileCache = {};
-  final double _tileSize = 512.0; //  of 2^n for better GPU performance
+  final Set<_TileKey> _pendingTiles = {};
+  final double _tileSize = 512; // Power of two for better GPU performance.
+  int _generationEpoch = 0;
 
   String? cleanedSvgData; // Store cleaned SVG data if unvisiblePoints is true
 
@@ -59,23 +67,44 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     super.initState();
     currentRenderProperties = widget.renderPropertiesListenable.value;
     widget.transformationController.addListener(_onTransformationChanged);
-    _loadSvg();
+    _loadSvg(currentRenderProperties);
   }
 
-  void _loadSvg() {
-    // if unvisiblePoints is true, clean the SVG content from point elements
-    // before loading only when the SVG source is a string (not asset or compiled)
-    cleanedSvgData = (widget.unvisiblePoints &&
-            currentRenderProperties.source == SvgSource.string)
-        ? FloorSvgParser.cleanPointsFromMap(currentRenderProperties.svg)
-        : currentRenderProperties.svg;
+  void _loadSvg(final SvgMapRenderProperties renderProperties) {
+    currentRenderProperties = renderProperties;
 
-    _vectorLoader = switch (currentRenderProperties.source) {
+    // if unvisiblePoints is true, clean the SVG content from point elements
+    // before loading only when the SVG source is a string.
+    cleanedSvgData =
+        (widget.unvisiblePoints && renderProperties.source == SvgSource.string)
+            ? FloorSvgParser.cleanPointsFromMap(renderProperties.svg as String)
+            : renderProperties.svg as String;
+
+    _vectorLoader = switch (renderProperties.source) {
       SvgSource.string => SvgStringLoader(cleanedSvgData!),
-      SvgSource.asset => SvgAssetLoader(currentRenderProperties.svg),
-      SvgSource.compiled => AssetBytesLoader(currentRenderProperties.svg),
+      SvgSource.asset => SvgAssetLoader(renderProperties.svg as String),
+      SvgSource.compiled => AssetBytesLoader(renderProperties.svg as String),
     };
-    _clearCache();
+    _loadedSvg = renderProperties.svg;
+    _loadedSource = renderProperties.source;
+    _loadedQuality = renderProperties.quality;
+    _loadedHiddenPoints = widget.unvisiblePoints;
+    _pictureFuture = null;
+    _clearCache(notify: false);
+  }
+
+  Future<PictureInfo> _loadPicture(final BuildContext context) =>
+      _pictureFuture ??= vg.loadPicture(_vectorLoader, context);
+
+  @override
+  void didUpdateWidget(final TiledSvgMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.transformationController != widget.transformationController) {
+      oldWidget.transformationController.removeListener(
+        _onTransformationChanged,
+      );
+      widget.transformationController.addListener(_onTransformationChanged);
+    }
   }
 
   @override
@@ -83,21 +112,23 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
       ValueListenableBuilder<SvgMapRenderProperties>(
         valueListenable: widget.renderPropertiesListenable,
         builder: (final context, final renderProperties, final _) {
-          // Only update if SVG source changed
-          if (renderProperties.svg != currentRenderProperties.svg) {
-            _loadSvg();
+          final sourceChanged = renderProperties.svg != _loadedSvg ||
+              renderProperties.source != _loadedSource ||
+              widget.unvisiblePoints != _loadedHiddenPoints;
+          if (sourceChanged) {
+            _loadSvg(renderProperties);
           }
 
-          // Check if quality changed
-          if (renderProperties.quality != currentRenderProperties.quality) {
+          if (renderProperties.quality != _loadedQuality) {
             currentRenderProperties = renderProperties;
-            _clearCache();
+            _loadedQuality = renderProperties.quality;
+            _clearCache(notify: false);
           }
 
           currentRenderProperties = renderProperties;
 
           return FutureBuilder<PictureInfo>(
-            future: vg.loadPicture(_vectorLoader, context),
+            future: _loadPicture(context),
             builder: (final context, final snapshot) {
               if (!snapshot.hasData) {
                 return renderProperties.loading ?? const SizedBox();
@@ -107,10 +138,10 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
 
               // size of the original SVG content (1:1 scale)
               final mapContentSize = pictureInfo.size;
-              // size of the area we have to fill with the map (size of the widget on screen)
+              // size of the area to fill with the map.
               final displaySize = renderProperties.size!;
 
-              // Scale to fit the entire map content into the display area (without zoom)
+              // Scale to fit the entire map content into the display area.
               final double fitScale =
                   (displaySize.width / mapContentSize.width) <
                           (displaySize.height / mapContentSize.height)
@@ -120,10 +151,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
               // Use the renderProperties.quality as rasterScale
               final double rasterScale = renderProperties.quality;
 
-              print(
-                  'FitScale: $fitScale, RasterScale: $rasterScale, DisplaySize: $displaySize, MapContentSize: $mapContentSize');
-
-              // determine which tiles are needed and trigger generation at required scale if necessary
+              // Determine which tiles are needed and trigger generation.
               _checkAndUpdateTiles(
                 mapContentSize,
                 displaySize,
@@ -136,7 +164,6 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
                 width: displaySize.width,
                 height: displaySize.height,
                 child: FittedBox(
-                  fit: BoxFit.contain,
                   child: SizedBox(
                     width: mapContentSize.width,
                     height: mapContentSize.height,
@@ -166,7 +193,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   void _checkAndUpdateTiles(
     final Size mapContentSize,
     final Size displaySize,
-    final double fitScale,
+    final double initialFitScale,
     final double rasterScale,
     final PictureInfo pictureInfo,
   ) {
@@ -175,13 +202,15 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     }
 
     final matrix = widget.transformationController.value;
-    // Get the current zoom scale from the parent InteractiveViewer's transformation matrix
+    // Get the current zoom scale from the parent InteractiveViewer matrix.
     final double zoomScale = matrix.getMaxScaleOnAxis();
 
     // Calculate how much FittedBox scaled the map
     final double fitScaleX = displaySize.width / mapContentSize.width;
     final double fitScaleY = displaySize.height / mapContentSize.height;
-    final double fitScale = fitScaleX < fitScaleY ? fitScaleX : fitScaleY;
+    final double fitScale = initialFitScale == 0
+        ? (fitScaleX < fitScaleY ? fitScaleX : fitScaleY)
+        : initialFitScale;
 
     // calculates the "Centering Offset" added by FittedBox
     // is the extra space on the left/top when the map is smaller than the screen
@@ -190,14 +219,14 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     final double offsetY =
         (displaySize.height - (mapContentSize.height * fitScale)) / 2;
 
-    // scales the map coordinates to the current zoom level (including the initial fit-to-screen scale)
+    // Scales map coordinates to current zoom, including fit-to-screen scale.
     final double totalScale = zoomScale * fitScale;
 
     // This aligns the "Map Zero" with the "Screen Zero"
     final double adjustedTx = matrix.getTranslation().x + (offsetX * zoomScale);
     final double adjustedTy = matrix.getTranslation().y + (offsetY * zoomScale);
 
-    // determine the visible area in map coordinates by inverting the current transformation
+    // Determine visible area in map coordinates by inverting the transform.
     final Rect visibleRect = Rect.fromLTRB(
       -adjustedTx / totalScale,
       -adjustedTy / totalScale,
@@ -205,15 +234,12 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
       (-adjustedTy + displaySize.height) / totalScale,
     );
 
-    // Calculate the logical tile size in map coordinates (accounting for the raster scale)
+    // Calculate logical tile size in map coordinates.
     final double logicalTileSize = _tileSize / rasterScale;
     final int totalCols =
         (mapContentSize.width * rasterScale / _tileSize).ceil();
     final int totalRows =
         (mapContentSize.height * rasterScale / _tileSize).ceil();
-
-    print(
-        'VisibleRect: $visibleRect, ZoomScale: $zoomScale, TotalScale: $totalScale, LogicalTileSize: $logicalTileSize, TotalCols: $totalCols, TotalRows: $totalRows');
 
     // Define the range of tiles that intersect with the visible area
 
@@ -228,8 +254,6 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     final int endRow =
         (visibleRect.bottom / logicalTileSize).ceil().clamp(0, totalRows) - 1;
 
-    print('VISIBLE INDEX RANGE: Col $startCol-$endCol, Row $startRow-$endRow');
-
     // Keep tiles within a x-tile radius of the current view
     // TODO: Allow caller to configure this radius
     // Adjust this value to keep more tiles around the edges
@@ -237,13 +261,12 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     const int rowDelta = 1;
     _pruneCache(startCol, endCol, startRow, endRow, colDelta, rowDelta);
 
-    // Determine whether the visible tiles are already generated at the required scale,
-    // if not, trigger generation
+    // Determine whether the visible tiles are already generated.
     bool needsGeneration = false;
     for (int x = startCol; x <= endCol; x++) {
       for (int y = startRow; y <= endRow; y++) {
         final key = _TileKey(x, y, rasterScale);
-        if (!_tileCache.containsKey(key)) {
+        if (!_tileCache.containsKey(key) && !_pendingTiles.contains(key)) {
           needsGeneration = true;
           break;
         }
@@ -256,21 +279,30 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     // Only generate if needed
     if (needsGeneration) {
       _isGeneratingTiles = true;
+      final generationEpoch = _generationEpoch;
 
       // Generate tiles asynchronously
       Future.microtask(() async {
-        for (int x = startCol; x <= endCol; x++) {
-          for (int y = startRow; y <= endRow; y++) {
-            final key = _TileKey(x, y, rasterScale);
-            if (_tileCache.containsKey(key)) {
-              continue;
+        try {
+          for (int x = startCol; x <= endCol; x++) {
+            for (int y = startRow; y <= endRow; y++) {
+              final key = _TileKey(x, y, rasterScale);
+              if (_tileCache.containsKey(key) || _pendingTiles.contains(key)) {
+                continue;
+              }
+              _pendingTiles.add(key);
+              await _generateTile(
+                x,
+                y,
+                rasterScale,
+                pictureInfo,
+                generationEpoch,
+              );
             }
-            // trigger tile generation (rasterization) for this tile at the required scale
-            _generateTile(x, y, rasterScale, pictureInfo);
-            print('Tiling: Generating ($x, $y), scale $rasterScale');
           }
+        } finally {
+          _isGeneratingTiles = false;
         }
-        _isGeneratingTiles = false;
       });
     }
   }
@@ -280,12 +312,13 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     final int row,
     final double scale,
     final PictureInfo pictureInfo,
+    final int generationEpoch,
   ) async {
     final key = _TileKey(col, row, scale);
 
-    // Render the specific tile area of the SVG content to an image at the required scale
+    // Render the specific SVG tile area to an image at the required scale.
     final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder)
+    Canvas(recorder)
       ..clipRect(Rect.fromLTWH(0, 0, _tileSize, _tileSize))
       ..save()
       ..translate(-(col * _tileSize), -(row * _tileSize))
@@ -293,49 +326,41 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
       ..drawPicture(pictureInfo.picture)
       ..restore();
 
-    // TODO: Only draw when debugging
-    // Debug overlay
-    final debugPaint = Paint()
-      ..color = const Color(0x40FF0000)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-    canvas.drawRect(Rect.fromLTWH(0, 0, _tileSize, _tileSize), debugPaint);
-
-    TextPainter(
-      text: TextSpan(
-        text: '$col,$row',
-        style: const TextStyle(
-          color: Color(0xFF000000),
-          fontSize: 24,
-          backgroundColor: Color(0x80FFFFFF),
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )
-      ..layout(maxWidth: _tileSize)
-      ..paint(canvas, const Offset(10, 10));
-
     // Build the image and store it in the cache
     final image = await recorder
         .endRecording()
         .toImage(_tileSize.toInt(), _tileSize.toInt());
-    if (mounted) {
-      _tileCache[key] = image;
-      _tileUpdateNotifier.value++; // Signal the painter to repaint
+
+    _pendingTiles.remove(key);
+
+    if (!mounted || generationEpoch != _generationEpoch) {
+      image.dispose();
+      return;
     }
+
+    _tileCache[key]?.dispose();
+    _tileCache[key] = image;
+    _tileUpdateNotifier.value++; // Signal the painter to repaint
   }
 
   final ValueNotifier<int> _tileUpdateNotifier = ValueNotifier(0);
 
   void _onTransformationChanged() {
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
-  void _clearCache() {
+  void _clearCache({final bool notify = true}) {
+    _generationEpoch++;
+    _pendingTiles.clear();
     for (final img in _tileCache.values) {
       img.dispose();
     }
     _tileCache.clear();
+    if (notify && mounted) {
+      _tileUpdateNotifier.value++;
+    }
   }
 
   void _pruneCache(
@@ -353,7 +378,6 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
           key.row < startRow - rowDelta ||
           key.row > endRow + rowDelta;
       if (isFar) {
-        print("Tiling: Disposing tile (${key.col}, ${key.row})");
         image.dispose();
       }
       return isFar;
@@ -364,6 +388,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   void dispose() {
     widget.transformationController.removeListener(_onTransformationChanged);
     _clearCache();
+    _tileUpdateNotifier.dispose();
     super.dispose();
   }
 }
@@ -409,5 +434,8 @@ class _SvgTilePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(final _SvgTilePainter oldDelegate) => true;
+  bool shouldRepaint(final _SvgTilePainter oldDelegate) =>
+      oldDelegate.tileCache != tileCache ||
+      oldDelegate.tileSize != tileSize ||
+      oldDelegate.gridScale != gridScale;
 }

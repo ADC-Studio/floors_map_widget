@@ -8,29 +8,29 @@ enum RenderStrategy { picture, raster }
 enum SvgSource { string, asset, compiled }
 
 class SvgMapRenderProperties {
-  // The SVG data, which can be a string, an asset path for .svg files, or asset path for compiled .vg files, depending on the source type.
-  dynamic svgData;
+  // The SVG data: raw markup, an SVG asset path, or a compiled VG asset path.
+  Object svgData;
   // The source type of the SVG data (string, asset simple, or asset compiled).
   SvgSource svgSource;
   Size? mapSize;
   RenderingStrategy renderingStrategy;
   Widget? loadingPlaceholder;
 
-  double renderquality = 1.0;
+  double renderquality = 1;
 
   SvgMapRenderProperties({
     required this.svgData,
     required this.svgSource,
     required this.mapSize,
     this.loadingPlaceholder,
-    this.renderquality = 5.0,
+    this.renderquality = 5,
     final RenderStrategy? renderingStrategy = RenderStrategy.raster,
   }) : renderingStrategy = renderingStrategy == RenderStrategy.raster
             ? RenderingStrategy.raster
             : RenderingStrategy.picture;
 
   SvgMapRenderProperties copyWith({
-    final dynamic? svgData,
+    final Object? svgData,
     final SvgSource? svgSource,
     final Size? mapSize,
     final Widget? loadingPlaceholder,
@@ -49,14 +49,14 @@ class SvgMapRenderProperties {
                 : RenderStrategy.picture),
       );
 
-  dynamic get svg => svgData;
+  Object get svg => svgData;
   SvgSource get source => svgSource;
   Size? get size => mapSize;
   double get quality => renderquality;
   RenderingStrategy get strategy => renderingStrategy;
   Widget? get loading => loadingPlaceholder;
 
-  set svg(final svg) => svgData = svg;
+  set svg(final Object svg) => svgData = svg;
   set size(final Size? size) => mapSize = size;
   set source(final SvgSource strategy) => svgSource = strategy;
   set strategy(final RenderingStrategy strategy) =>
@@ -77,6 +77,8 @@ class SvgMap extends StatefulWidget {
 class _SvgMapState extends State<SvgMap> {
   late BytesLoader _vectorLoader;
   late SvgMapRenderProperties currentRenderProperties;
+  Object? _loadedSvg;
+  SvgSource? _loadedSource;
 
   @override
   void initState() {
@@ -88,10 +90,14 @@ class _SvgMapState extends State<SvgMap> {
 
   void _loadSvg() {
     _vectorLoader = switch (currentRenderProperties.source) {
-      SvgSource.string => SvgStringLoader(currentRenderProperties.svg),
-      SvgSource.asset => SvgAssetLoader(currentRenderProperties.svg),
-      SvgSource.compiled => AssetBytesLoader(currentRenderProperties.svg),
+      SvgSource.string =>
+        SvgStringLoader(currentRenderProperties.svg as String),
+      SvgSource.asset => SvgAssetLoader(currentRenderProperties.svg as String),
+      SvgSource.compiled =>
+        AssetBytesLoader(currentRenderProperties.svg as String),
     };
+    _loadedSvg = currentRenderProperties.svg;
+    _loadedSource = currentRenderProperties.source;
   }
 
   @override
@@ -101,8 +107,9 @@ class _SvgMapState extends State<SvgMap> {
       valueListenable: widget.renderPropertiesListenable,
       // ignore: prefer_expression_function_bodies
       builder: (final context, final renderProperties, final _) {
-        if (renderProperties.svg != currentRenderProperties.svg) {
-          currentRenderProperties.svg = renderProperties.svg;
+        if (renderProperties.svg != _loadedSvg ||
+            renderProperties.source != _loadedSource) {
+          currentRenderProperties = renderProperties;
           _loadSvg();
         }
         return Center(
@@ -114,7 +121,7 @@ class _SvgMapState extends State<SvgMap> {
             ),
             child: SvgPicture(
               _vectorLoader,
-              width: renderProperties.size?.height,
+              width: renderProperties.size?.width,
               height: renderProperties.size?.height,
               renderingStrategy: renderProperties.renderingStrategy,
             ),

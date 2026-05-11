@@ -109,6 +109,10 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   int _debugCacheHits = 0;
   int _debugCacheMisses = 0;
   String _debugVisibleRange = 'none';
+  OverlayEntry? _debugOverlayEntry;
+  bool _isDebugPanelExpanded = true;
+  bool _debugOverlaySyncScheduled = false;
+  bool _debugOverlayBuildScheduled = false;
 
   String? cleanedSvgData; // Store cleaned SVG data if unvisiblePoints is true
 
@@ -118,6 +122,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     currentRenderProperties = widget.renderPropertiesListenable.value;
     widget.transformationController.addListener(_onTransformationChanged);
     _loadSvg(currentRenderProperties);
+    _syncDebugOverlay();
   }
 
   void _loadSvg(final SvgMapRenderProperties renderProperties) {
@@ -165,12 +170,71 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   void _notifyTilesChanged() {
     _tileVersion++;
     _tileUpdateNotifier.value = _tileVersion;
+    _markDebugOverlayNeedsBuild();
   }
 
   void _debugLog(final String message) {
     if (widget.debugTiles && kDebugMode) {
       debugPrint('TiledSvgMap: $message');
     }
+  }
+
+  void _syncDebugOverlay() {
+    if (_debugOverlaySyncScheduled) {
+      return;
+    }
+    _debugOverlaySyncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((final _) {
+      _debugOverlaySyncScheduled = false;
+      if (!mounted) {
+        return;
+      }
+      if (!widget.debugTiles) {
+        _removeDebugOverlay();
+        return;
+      }
+
+      final overlay = Overlay.of(context, rootOverlay: true);
+      _debugOverlayEntry ??= OverlayEntry(
+        builder: (final context) => _TileDebugOverlay(
+          debugInfo: _debugInfo,
+          tileVersion: _tileVersion,
+          isExpanded: _isDebugPanelExpanded,
+          onToggle: _toggleDebugPanel,
+        ),
+      );
+
+      if (_debugOverlayEntry!.mounted) {
+        _debugOverlayEntry!.markNeedsBuild();
+      } else {
+        overlay.insert(_debugOverlayEntry!);
+      }
+    });
+  }
+
+  void _markDebugOverlayNeedsBuild() {
+    if (!widget.debugTiles || _debugOverlayBuildScheduled) {
+      return;
+    }
+    _debugOverlayBuildScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((final _) {
+      _debugOverlayBuildScheduled = false;
+      if (mounted &&
+          widget.debugTiles &&
+          (_debugOverlayEntry?.mounted ?? false)) {
+        _debugOverlayEntry?.markNeedsBuild();
+      }
+    });
+  }
+
+  void _toggleDebugPanel() {
+    _isDebugPanelExpanded = !_isDebugPanelExpanded;
+    _debugOverlayEntry?.markNeedsBuild();
+  }
+
+  void _removeDebugOverlay() {
+    _debugOverlayEntry?.remove();
+    _debugOverlayEntry = null;
   }
 
   Future<PictureInfo> _loadPicture(final BuildContext context) =>
@@ -185,6 +249,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
       );
       widget.transformationController.addListener(_onTransformationChanged);
     }
+    _syncDebugOverlay();
   }
 
   @override
@@ -192,6 +257,8 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
       ValueListenableBuilder<SvgMapRenderProperties>(
         valueListenable: widget.renderPropertiesListenable,
         builder: (final context, final renderProperties, final _) {
+          _syncDebugOverlay();
+
           final sourceChanged = renderProperties.svg != _loadedSvg ||
               renderProperties.source != _loadedSource ||
               widget.unvisiblePoints != _loadedHiddenPoints;
@@ -259,7 +326,6 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
                           tileVersion: tileVersion,
                           repaint: _tileUpdateNotifier,
                           debugTiles: widget.debugTiles,
-                          debugInfo: _debugInfo,
                         ),
                       ),
                     ),
@@ -366,6 +432,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
       '$_debugVisibleRange, hits: $cacheHits, misses: $cacheMisses, '
       'cached: ${_tileCache.length}, pending: ${_pendingTiles.length}',
     );
+    _markDebugOverlayNeedsBuild();
 
     // Only generate if needed
     if (needsGeneration) {
@@ -485,6 +552,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
 
   @override
   void dispose() {
+    _removeDebugOverlay();
     widget.transformationController.removeListener(_onTransformationChanged);
     _clearCache();
     _tileUpdateNotifier.dispose();
@@ -498,7 +566,6 @@ class _SvgTilePainter extends CustomPainter {
   final double gridScale;
   final int tileVersion;
   final bool debugTiles;
-  final _TileDebugInfo debugInfo;
 
   _SvgTilePainter({
     required this.tileCache,
@@ -507,7 +574,6 @@ class _SvgTilePainter extends CustomPainter {
     required this.tileVersion,
     required final Listenable repaint,
     required this.debugTiles,
-    required this.debugInfo,
   }) : super(repaint: repaint);
 
   @override
@@ -551,50 +617,6 @@ class _SvgTilePainter extends CustomPainter {
         );
       }
     });
-
-    if (debugTiles) {
-      _paintDebugPanel(canvas, size);
-    }
-  }
-
-  void _paintDebugPanel(final Canvas canvas, final Size size) {
-    const padding = 8.0;
-    const panelWidth = 220.0;
-    const panelHeight = 118.0;
-    final availableWidth = size.width - padding * 2;
-    if (availableWidth <= 0) {
-      return;
-    }
-    final panelRect = Rect.fromLTWH(
-      padding,
-      padding,
-      panelWidth.clamp(0, availableWidth).toDouble(),
-      panelHeight,
-    );
-    canvas
-      ..drawRect(
-        panelRect,
-        Paint()..color = const Color(0xCCFFFFFF),
-      )
-      ..drawRect(
-        panelRect,
-        Paint()
-          ..color = const Color(0xFF1E1E1E)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
-      );
-    _paintText(
-      canvas,
-      'tiles v$tileVersion\n'
-      'visible: ${debugInfo.visibleRange}\n'
-      'cache: ${debugInfo.cachedTiles}, pending: ${debugInfo.pendingTiles}\n'
-      'hits: ${debugInfo.cacheHits}, misses: ${debugInfo.cacheMisses}\n'
-      'generated: ${debugInfo.generatedTiles}, '
-      'pruned: ${debugInfo.prunedTiles}',
-      const Offset(padding + 8, padding + 8),
-      fontSize: 11,
-      backgroundColor: const Color(0x00000000),
-    );
   }
 
   void _paintText(
@@ -624,6 +646,75 @@ class _SvgTilePainter extends CustomPainter {
       oldDelegate.tileVersion != tileVersion ||
       oldDelegate.tileSize != tileSize ||
       oldDelegate.gridScale != gridScale ||
-      oldDelegate.debugTiles != debugTiles ||
-      oldDelegate.debugInfo != debugInfo;
+      oldDelegate.debugTiles != debugTiles;
+}
+
+class _TileDebugOverlay extends StatelessWidget {
+  final _TileDebugInfo debugInfo;
+  final int tileVersion;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+
+  const _TileDebugOverlay({
+    required this.debugInfo,
+    required this.tileVersion,
+    required this.isExpanded,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(final BuildContext context) => Positioned(
+        top: 12,
+        right: 12,
+        child: SafeArea(
+          child: GestureDetector(
+            onTap: onToggle,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xEFFFFFFF),
+                border: Border.all(color: const Color(0xFF1E1E1E)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: isExpanded ? _expandedContent() : _collapsedContent(),
+              ),
+            ),
+          ),
+        ),
+      );
+
+  Widget _collapsedContent() => Text(
+        'Tiles v$tileVersion +',
+        style: const TextStyle(
+          color: Color(0xFF1E1E1E),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+
+  Widget _expandedContent() => ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 260),
+        child: Text(
+          'tiles v$tileVersion -\n'
+          'visible: ${debugInfo.visibleRange}\n'
+          'cache: ${debugInfo.cachedTiles}, '
+          'pending: ${debugInfo.pendingTiles}\n'
+          'hits: ${debugInfo.cacheHits}, '
+          'misses: ${debugInfo.cacheMisses}\n'
+          'generated: ${debugInfo.generatedTiles}, '
+          'pruned: ${debugInfo.prunedTiles}',
+          style: const TextStyle(
+            color: Color(0xFF1E1E1E),
+            fontSize: 11,
+            height: 1.25,
+          ),
+        ),
+      );
 }

@@ -158,6 +158,13 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(CustomPaint), findsWidgets);
+        expect(find.textContaining('visible:'), findsOneWidget);
+
+        await tester.tap(find.textContaining('tiles v'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('visible:'), findsNothing);
+        expect(find.textContaining('Tiles v'), findsOneWidget);
       } finally {
         debugPrint = previousDebugPrint;
       }

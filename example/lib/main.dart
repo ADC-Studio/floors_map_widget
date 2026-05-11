@@ -2,7 +2,6 @@ import 'package:example/widgets/example_bottom_sheet.dart';
 import 'package:floors_map_widget/floors_map_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
 
 // To make the example easier to understand,
 // no state management libraries were used.
@@ -77,6 +76,7 @@ class _SvgMapExampleState extends State<SvgMapExample> {
 
   @override
   void dispose() {
+    renderPropertiesNotifier?.dispose();
     _transformationController.dispose();
     super.dispose();
   }
@@ -119,6 +119,7 @@ class _SvgMapExampleState extends State<SvgMapExample> {
           )
           .toList();
 
+      renderPropertiesNotifier?.dispose();
       renderPropertiesNotifier = ValueNotifier(
         SvgMapRenderProperties(
           mapSize: null,
@@ -130,6 +131,9 @@ class _SvgMapExampleState extends State<SvgMapExample> {
       );
 
       // Updating received data on UI
+      if (!mounted) {
+        return;
+      }
       setState(
         () {
           _svgContent = svgContent;
@@ -147,44 +151,42 @@ class _SvgMapExampleState extends State<SvgMapExample> {
   }
 
   @override
-  Widget build(final BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: _buildFloatingActionButtons(context),
-      appBar: AppBar(
-        title: const Text('Example Map Widget'),
-      ),
-      body: _svgContent == null
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: InteractiveViewer(
-                transformationController: _transformationController,
-                onInteractionEnd: _onScaleEnd,
-                maxScale: 20,
-                minScale: 1,
-                child: RepaintBoundary(
-                  child: FloorMapWidget(
-                    // String from SVG Map
-                    _svgContent!,
-                    // Floors widgets
-                    _listWidgets,
-                    points!,
-                    renderPropertiesNotifier: renderPropertiesNotifier!,
-                    transformationController: _transformationController,
-                    // Use for build a route
-                    startIdPoint: _startPointItem?.idPoint,
-                    endIdPoint: _endPointItem?.idPoint,
-                    // Use for remove points from svg only used when providing
-                    // a string as svg data, not needed when using compiled svg
-                    // ignored otherwise
-                    unvisiblePoints: true,
+  Widget build(final BuildContext context) => Scaffold(
+        key: _scaffoldKey,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButton: _buildFloatingActionButtons(context),
+        appBar: AppBar(
+          title: const Text('Example Map Widget'),
+        ),
+        body: _svgContent == null
+            ? const Center(child: CircularProgressIndicator())
+            : SafeArea(
+                child: InteractiveViewer(
+                  transformationController: _transformationController,
+                  onInteractionEnd: _onScaleEnd,
+                  maxScale: 20,
+                  minScale: 1,
+                  child: RepaintBoundary(
+                    child: FloorMapWidget(
+                      // String from SVG Map
+                      _svgContent!,
+                      // Floors widgets
+                      _listWidgets,
+                      listPoints: points,
+                      renderPropertiesNotifier: renderPropertiesNotifier,
+                      transformationController: _transformationController,
+                      // Use for build a route
+                      startIdPoint: _startPointItem?.idPoint,
+                      endIdPoint: _endPointItem?.idPoint,
+                      // Use for remove points from svg only used when
+                      // providing a string as svg data.
+                      // ignored otherwise
+                      unvisiblePoints: true,
+                    ),
                   ),
                 ),
               ),
-            ),
-    );
-  }
+      );
 
   Widget _buildFloatingActionButtons(final BuildContext context) => Card(
         elevation: 4,

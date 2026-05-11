@@ -14,7 +14,7 @@ void main() {
             </g>
             <g id="Store 2">
                 <path id="shop-2=2"
-                    d="M171.447 49.6085V89.6045H234.107V65.5325V62.1365H237.515H247.307V45.3005H227.543V3.39648H149.843V37.2005H176.039H171.447В49.6085З"
+                    d="M171.447 49.6085V89.6045H234.107V65.5325V62.1365H237.515H247.307V45.3005H227.543V3.39648H149.843V37.2005H176.039H171.447V49.6085Z"
                     fill="#EEF9FE" />
             </g>
         </g>
@@ -72,7 +72,8 @@ void main() {
       );
 
       // Check that an element containing the SVG map is rendered
-      expect(find.byType(SvgMap), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.byType(CustomPaint), findsWidgets);
     });
 
     testWidgets('should render listItemsWidgets correctly',
@@ -112,9 +113,27 @@ void main() {
         ),
       );
 
-      // Check that the points are hidden
-      final svgMap = tester.widget<SvgMap>(find.byType(SvgMap));
-      expect(svgMap.hidePoints, true);
+      final cleanedSvg = FloorSvgParser.cleanPointsFromMap(svgTestContent);
+      expect(cleanedSvg, isNot(contains('point-')));
+    });
+
+    testWidgets('should show an initial route when endpoints are provided',
+        (final tester) async {
+      final parser = FloorSvgParser(svgContent: svgTestContent);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FloorMapWidget(
+            svgTestContent,
+            const [],
+            listPoints: parser.getPoints(),
+            startIdPoint: 1,
+            endIdPoint: 2,
+          ),
+        ),
+      );
+
+      expect(find.byType(FloorPathPainter), findsOneWidget);
     });
   });
 

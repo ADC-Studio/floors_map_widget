@@ -25,7 +25,3 @@ flutter:
   uses-material-design: true
   assets:
     - assets/map_with_points_example.svg
-    - assets/frutras_y_hortalizas.svg
-    - assets/frutras_y_hortalizas_full_coors.svg
-    - assets/frutras_y_hortalizas_full_coors_optimized_no_groups.svg
-    - assets/frutras_y_hortalizas_full_coors_optimized_no_groups.vg

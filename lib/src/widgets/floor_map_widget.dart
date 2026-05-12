@@ -11,6 +11,7 @@ class FloorMapWidget extends StatefulWidget {
   final int? endIdPoint;
   final ValueNotifier<SvgMapRenderProperties> renderPropertiesNotifier;
   final TransformationController transformationController;
+  final bool drawTilesDebugging;
 
   /// A widget that displays an SVG map with interactive floor items.
   const FloorMapWidget(
@@ -19,6 +20,7 @@ class FloorMapWidget extends StatefulWidget {
     this.listPoints, {
     required this.renderPropertiesNotifier,
     required this.transformationController,
+    this.drawTilesDebugging = false,
     this.unvisiblePoints = false,
     this.startIdPoint,
     this.endIdPoint,
@@ -83,6 +85,7 @@ class _FloorMapWidgetState extends State<FloorMapWidget> {
                   widget.renderPropertiesNotifier,
                   widget.transformationController,
                   unvisiblePoints: widget.unvisiblePoints,
+                  drawTilesDebugging: widget.drawTilesDebugging,
                 ),
               ),
 

@@ -31,12 +31,14 @@ class TiledSvgMap extends StatefulWidget {
   // The TransformationController from the parent InteractiveViewer, used to calculate visible tiles
   final TransformationController transformationController;
   final bool unvisiblePoints;
+  final bool drawTilesDebugging;
 
   const TiledSvgMap.listenable(
     this.renderPropertiesListenable,
     this.transformationController, {
     super.key,
     this.unvisiblePoints = false,
+    this.drawTilesDebugging = false,
   });
 
   @override
@@ -54,9 +56,12 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
 
   String? cleanedSvgData; // Store cleaned SVG data if unvisiblePoints is true
 
+  late final bool drawTilesDebugging;
+
   @override
   void initState() {
     super.initState();
+    drawTilesDebugging = widget.drawTilesDebugging;
     currentRenderProperties = widget.renderPropertiesListenable.value;
     widget.transformationController.addListener(_onTransformationChanged);
     _loadSvg();
@@ -120,8 +125,10 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
               // Use the renderProperties.quality as rasterScale
               final double rasterScale = renderProperties.quality;
 
-              print(
-                  'FitScale: $fitScale, RasterScale: $rasterScale, DisplaySize: $displaySize, MapContentSize: $mapContentSize');
+              if (kDebugMode) {
+                debugPrint(
+                    'FitScale: $fitScale, RasterScale: $rasterScale, DisplaySize: $displaySize, MapContentSize: $mapContentSize');
+              }
 
               // determine which tiles are needed and trigger generation at required scale if necessary
               _checkAndUpdateTiles(
@@ -212,8 +219,10 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     final int totalRows =
         (mapContentSize.height * rasterScale / _tileSize).ceil();
 
-    print(
-        'VisibleRect: $visibleRect, ZoomScale: $zoomScale, TotalScale: $totalScale, LogicalTileSize: $logicalTileSize, TotalCols: $totalCols, TotalRows: $totalRows');
+    if (kDebugMode) {
+      debugPrint(
+          'VisibleRect: $visibleRect, ZoomScale: $zoomScale, TotalScale: $totalScale, LogicalTileSize: $logicalTileSize, TotalCols: $totalCols, TotalRows: $totalRows');
+    }
 
     // Define the range of tiles that intersect with the visible area
 
@@ -228,7 +237,10 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     final int endRow =
         (visibleRect.bottom / logicalTileSize).ceil().clamp(0, totalRows) - 1;
 
-    print('VISIBLE INDEX RANGE: Col $startCol-$endCol, Row $startRow-$endRow');
+    if (kDebugMode) {
+      debugPrint(
+          'VISIBLE INDEX RANGE: Col $startCol-$endCol, Row $startRow-$endRow');
+    }
 
     // Keep tiles within a x-tile radius of the current view
     // TODO: Allow caller to configure this radius
@@ -267,7 +279,9 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
             }
             // trigger tile generation (rasterization) for this tile at the required scale
             _generateTile(x, y, rasterScale, pictureInfo);
-            print('Tiling: Generating ($x, $y), scale $rasterScale');
+            if (kDebugMode) {
+              debugPrint('Tiling: Generating ($x, $y), scale $rasterScale');
+            }
           }
         }
         _isGeneratingTiles = false;
@@ -294,26 +308,28 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
       ..restore();
 
     // TODO: Only draw when debugging
-    // Debug overlay
-    final debugPaint = Paint()
-      ..color = const Color(0x40FF0000)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-    canvas.drawRect(Rect.fromLTWH(0, 0, _tileSize, _tileSize), debugPaint);
+    if (drawTilesDebugging) {
+      // Debug overlay
+      final debugPaint = Paint()
+        ..color = const Color(0x40FF0000)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+      canvas.drawRect(Rect.fromLTWH(0, 0, _tileSize, _tileSize), debugPaint);
 
-    TextPainter(
-      text: TextSpan(
-        text: '$col,$row',
-        style: const TextStyle(
-          color: Color(0xFF000000),
-          fontSize: 24,
-          backgroundColor: Color(0x80FFFFFF),
+      TextPainter(
+        text: TextSpan(
+          text: '$col,$row',
+          style: const TextStyle(
+            color: Color(0xFF000000),
+            fontSize: 24,
+            backgroundColor: Color(0x80FFFFFF),
+          ),
         ),
-      ),
-      textDirection: TextDirection.ltr,
-    )
-      ..layout(maxWidth: _tileSize)
-      ..paint(canvas, const Offset(10, 10));
+        textDirection: TextDirection.ltr,
+      )
+        ..layout(maxWidth: _tileSize)
+        ..paint(canvas, const Offset(10, 10));
+    }
 
     // Build the image and store it in the cache
     final image = await recorder
@@ -353,7 +369,9 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
           key.row < startRow - rowDelta ||
           key.row > endRow + rowDelta;
       if (isFar) {
-        print("Tiling: Disposing tile (${key.col}, ${key.row})");
+        if (kDebugMode) {
+          debugPrint('Tiling: Disposing tile (${key.col}, ${key.row})');
+        }
         image.dispose();
       }
       return isFar;

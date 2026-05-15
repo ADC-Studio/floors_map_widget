@@ -36,6 +36,9 @@ This widget allows you to create an interactive floor map based on an SVG image.
 - Generation of an interactive map based on an SVG image.
 - Creating and visualizing routes between different points.
 - Configuring interactions when clicking on a block.
+- Tiled SVG rendering for smoother work with large maps.
+- Optional tile debug overlay for inspecting visible tile ranges and cache
+  behavior during development.
 
 ## Supported Object Classes
 
@@ -128,16 +131,59 @@ Add the library to your project and embed the ready widget containing the necess
 
 ```Dart
 FloorMapWidget(
-    // String from SVG Map
-    _svgContent,
-    // Floors widgets
-    _listWidgets,
-    // Use to build a route
-    startIdPoint: _startPointItem?.idPoint,
-    endIdPoint:_endPointItem?.idPoint,
-    // Use to remove points from SVG
-    unvisiblePoints: true,
+  // String from SVG Map
+  _svgContent,
+  // Floor widgets
+  _listWidgets,
+  // Optional: parsed route points. If omitted, FloorMapWidget parses them.
+  listPoints: _listPoints,
+  // Use to build a route
+  startIdPoint: _startPointItem?.idPoint,
+  endIdPoint: _endPointItem?.idPoint,
+  // Use to remove point markers from SVG string rendering
+  unvisiblePoints: true,
 ),
+```
+
+By default, the widget renders the SVG through the tiled renderer. This keeps
+the map layer independent from interactive item overlays and reduces repeated
+raster work while panning and zooming.
+
+For development, enable the tile debug overlay:
+
+```dart
+FloorMapWidget(
+  _svgContent,
+  _listWidgets,
+  debugTiles: true,
+)
+```
+
+The debug panel is pinned to the top-right corner of the app overlay and can be
+collapsed by tapping it. It shows the visible tile range, cached and pending
+tiles, cache hits/misses, generated tiles, and pruned tiles.
+
+For advanced zoom-quality control, pass your own `TransformationController` and
+`ValueNotifier<SvgMapRenderProperties>`:
+
+```dart
+final transformationController = TransformationController();
+final renderPropertiesNotifier = ValueNotifier(
+  SvgMapRenderProperties(
+    svgData: svgContent,
+    svgSource: SvgSource.string,
+    mapSize: null,
+    renderingStrategy: RenderStrategy.picture,
+  ),
+);
+
+FloorMapWidget(
+  svgContent,
+  itemWidgets,
+  listPoints: points,
+  transformationController: transformationController,
+  renderPropertiesNotifier: renderPropertiesNotifier,
+)
 ```
 
 To add interactive objects to the map, you need to initialize them with the FloorItemWidget and pass them as a list to FloorItemWidget.

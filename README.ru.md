@@ -37,6 +37,9 @@
 - Генерация интерактивной карты на основе SVG изображения.
 - Составление и визуализация маршрутов между различными точками.
 - Настройка взаимодействий при нажатии на блок.
+- Тайловый рендеринг SVG для более плавной работы с большими картами.
+- Опциональная debug-панель тайлов для анализа видимой области и поведения
+  кэша во время разработки.
 
 ## Поддерживаемые классы объектов
 
@@ -129,16 +132,60 @@ stairs-elevator-1=2
 
 ```Dart
 FloorMapWidget(
-    // String from SVG Map
-    _svgContent,
-    // Floors widgets
-    _listWidgets,
-    // Use for build a route
-    startIdPoint: _startPointItem?.idPoint,
-    endIdPoint: _endPointItem?.idPoint, 
-    // Use for remove points from svg
-    unvisiblePoints: true,
+  // String from SVG Map
+  _svgContent,
+  // Floor widgets
+  _listWidgets,
+  // Опционально: заранее распарсенные route points.
+  // Если не передать, FloorMapWidget распарсит их сам.
+  listPoints: _listPoints,
+  // Use for build a route
+  startIdPoint: _startPointItem?.idPoint,
+  endIdPoint: _endPointItem?.idPoint,
+  // Use for remove points from svg
+  unvisiblePoints: true,
 ),
+```
+
+По умолчанию карта отрисовывается через тайловый renderer. Это отделяет слой
+карты от интерактивных объектов и снижает количество повторной растеризации во
+время перемещения и масштабирования.
+
+Для разработки можно включить debug-панель тайлов:
+
+```dart
+FloorMapWidget(
+  _svgContent,
+  _listWidgets,
+  debugTiles: true,
+)
+```
+
+Панель закреплена в правом верхнем углу поверх приложения и сворачивается по
+нажатию. Она показывает видимый диапазон тайлов, cached/pending tiles,
+hits/misses, generated tiles и pruned tiles.
+
+Для расширенного управления качеством при масштабировании можно передать свои
+`TransformationController` и `ValueNotifier<SvgMapRenderProperties>`:
+
+```dart
+final transformationController = TransformationController();
+final renderPropertiesNotifier = ValueNotifier(
+  SvgMapRenderProperties(
+    svgData: svgContent,
+    svgSource: SvgSource.string,
+    mapSize: null,
+    renderingStrategy: RenderStrategy.picture,
+  ),
+);
+
+FloorMapWidget(
+  svgContent,
+  itemWidgets,
+  listPoints: points,
+  transformationController: transformationController,
+  renderPropertiesNotifier: renderPropertiesNotifier,
+)
 ```
 
 Чтобы добавить на карту интерактивные объекты, необходимо их инициализировать виджетом FloorItemWidget и передать списком в FloorItemWidget.

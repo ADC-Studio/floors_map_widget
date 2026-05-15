@@ -74,6 +74,7 @@ void main() {
       // Check that an element containing the SVG map is rendered
       await tester.pumpAndSettle();
       expect(find.byType(CustomPaint), findsWidgets);
+      expect(find.textContaining('visible:'), findsNothing);
     });
 
     testWidgets('should render listItemsWidgets correctly',
@@ -158,16 +159,55 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(CustomPaint), findsWidgets);
-        expect(find.textContaining('visible:'), findsOneWidget);
+        final expandedDebugText = tester.widget<Text>(
+          find.textContaining('visible:'),
+        );
+        expect(expandedDebugText.style?.decoration, TextDecoration.none);
 
         await tester.tap(find.textContaining('tiles v'));
         await tester.pumpAndSettle();
 
         expect(find.textContaining('visible:'), findsNothing);
-        expect(find.textContaining('Tiles v'), findsOneWidget);
+        final collapsedDebugText = tester.widget<Text>(
+          find.textContaining('Tiles v'),
+        );
+        expect(collapsedDebugText.style?.decoration, TextDecoration.none);
       } finally {
         debugPrint = previousDebugPrint;
       }
+    });
+
+    testWidgets('should accept external render properties and controller',
+        (final tester) async {
+      final parser = FloorSvgParser(svgContent: svgTestContent);
+      final transformationController = TransformationController();
+      final renderPropertiesNotifier = ValueNotifier(
+        SvgMapRenderProperties(
+          svgData: svgTestContent,
+          svgSource: SvgSource.string,
+          mapSize: null,
+          renderingStrategy: RenderStrategy.picture,
+        ),
+      );
+      addTearDown(transformationController.dispose);
+      addTearDown(renderPropertiesNotifier.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FloorMapWidget(
+            svgTestContent,
+            const [],
+            listPoints: parser.getPoints(),
+            transformationController: transformationController,
+            renderPropertiesNotifier: renderPropertiesNotifier,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(renderPropertiesNotifier.value.size, isNotNull);
+      expect(find.byType(CustomPaint), findsWidgets);
     });
   });
 

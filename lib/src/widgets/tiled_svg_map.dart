@@ -118,6 +118,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   final Map<_TileKey, ui.Image> _tileCache = {};
   final Set<_TileKey> _pendingTiles = {};
   Set<_TileKey> _visibleTileKeys = {};
+  Rect? _visibleRect;
   final double _tileSize = 512; // Power of two for better GPU performance.
   int _generationEpoch = 0;
   int _tileVersion = 0;
@@ -197,6 +198,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     _requestedRasterScale = 1;
     _effectiveRasterScale = 1;
     _visibleTileKeys = {};
+    _visibleRect = null;
   }
 
   void _notifyTilesChanged() {
@@ -408,8 +410,10 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     }
 
     _activeRasterScale = effectiveRasterScale;
+    _generationEpoch++;
+    _pendingTiles.clear();
     _isGeneratingTiles = false;
-    _clearCache(notify: false);
+    _needsTileUpdateAfterGeneration = false;
     _markDebugOverlayNeedsBuild();
   }
 
@@ -478,26 +482,19 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     final int endRow =
         (visibleRect.bottom / logicalTileSize).ceil().clamp(0, totalRows) - 1;
     _debugVisibleRange = 'cols $startCol-$endCol, rows $startRow-$endRow';
-
-    // Keep tiles within a x-tile radius of the current view
-    // TODO: Allow caller to configure this radius
-    // Adjust this value to keep more tiles around the edges
-    const int colDelta = 1;
-    const int rowDelta = 1;
-    _pruneCache(startCol, endCol, startRow, endRow, colDelta, rowDelta);
+    _visibleRect = visibleRect;
+    _pruneCache(visibleRect);
 
     // Determine whether the visible tiles are already generated.
     bool needsGeneration = false;
     int cacheHits = 0;
     int cacheMisses = 0;
-    int displayedTiles = 0;
     final visibleTileKeys = <_TileKey>{};
     for (int x = startCol; x <= endCol; x++) {
       for (int y = startRow; y <= endRow; y++) {
         final key = _TileKey(x, y, rasterScale);
         visibleTileKeys.add(key);
         if (_tileCache.containsKey(key)) {
-          displayedTiles++;
           cacheHits++;
         } else if (_pendingTiles.contains(key)) {
           cacheHits++;
@@ -508,7 +505,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
       }
     }
     _visibleTileKeys = visibleTileKeys;
-    _debugDisplayedTiles = displayedTiles;
+    _debugDisplayedTiles = _countDisplayedTiles(visibleRect);
     _debugVisibleTiles = visibleTileKeys.length;
     _debugCacheHits = cacheHits;
     _debugCacheMisses = cacheMisses;
@@ -598,13 +595,35 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     _pendingTiles.remove(key);
     _tileCache[key]?.dispose();
     _tileCache[key] = image;
-    if (_visibleTileKeys.contains(key)) {
-      _debugDisplayedTiles =
-          _visibleTileKeys.where(_tileCache.containsKey).length;
+    if (_visibleTileKeys.contains(key) || _isTileVisible(key)) {
+      _debugDisplayedTiles = _tileCache.keys.where(_isTileVisible).length;
     }
     _generatedTiles++;
     _notifyTilesChanged();
   }
+
+  Rect _tileRect(final _TileKey key) {
+    final logicalTileSize = _tileSize / key.scale;
+    return Rect.fromLTWH(
+      key.col * logicalTileSize,
+      key.row * logicalTileSize,
+      logicalTileSize,
+      logicalTileSize,
+    );
+  }
+
+  bool _isTileVisible(final _TileKey key) {
+    final visibleRect = _visibleRect;
+    if (visibleRect == null) {
+      return false;
+    }
+
+    return _tileRect(key).overlaps(visibleRect);
+  }
+
+  int _countDisplayedTiles(final Rect visibleRect) => _tileCache.keys
+      .where((final key) => _tileRect(key).overlaps(visibleRect))
+      .length;
 
   final ValueNotifier<int> _tileUpdateNotifier = ValueNotifier(0);
 
@@ -617,6 +636,8 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   void _clearCache({final bool notify = true}) {
     _generationEpoch++;
     _pendingTiles.clear();
+    _isGeneratingTiles = false;
+    _needsTileUpdateAfterGeneration = false;
     _debugDisplayedTiles = 0;
     for (final img in _tileCache.values) {
       img.dispose();
@@ -627,21 +648,14 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     }
   }
 
-  void _pruneCache(
-    final int startCol,
-    final int endCol,
-    final int startRow,
-    final int endRow,
-    final int colDelta,
-    final int rowDelta,
-  ) {
+  void _pruneCache(final Rect visibleRect) {
     // Keep tiles within a x-tile radius of the current view
     int prunedTiles = 0;
     _tileCache.removeWhere((final key, final image) {
-      final bool isFar = key.col < startCol - colDelta ||
-          key.col > endCol + colDelta ||
-          key.row < startRow - rowDelta ||
-          key.row > endRow + rowDelta;
+      final tileRect = _tileRect(key);
+      final bool isFar = !tileRect.overlaps(
+        visibleRect.inflate(_tileSize / key.scale),
+      );
       if (isFar) {
         prunedTiles++;
         image.dispose();
@@ -694,10 +708,23 @@ class _SvgTilePainter extends CustomPainter {
       Paint()..color = const Color(0xFFF5F5F5),
     );
 
-    tileCache.forEach((final key, final image) {
-      final double x = (key.col * tileSize) / gridScale;
-      final double y = (key.row * tileSize) / gridScale;
-      final double tileLogicalSize = tileSize / gridScale;
+    final tiles = tileCache.entries.toList()
+      ..sort((final a, final b) {
+        final aIsActive = a.key.scale == gridScale;
+        final bIsActive = b.key.scale == gridScale;
+        if (aIsActive == bIsActive) {
+          return a.key.scale.compareTo(b.key.scale);
+        }
+        return aIsActive ? 1 : -1;
+      });
+
+    for (final entry in tiles) {
+      final key = entry.key;
+      final image = entry.value;
+      final double tileScale = key.scale;
+      final double x = (key.col * tileSize) / tileScale;
+      final double y = (key.row * tileSize) / tileScale;
+      final double tileLogicalSize = tileSize / tileScale;
       final tileRect = Rect.fromLTWH(
         x,
         y,
@@ -716,11 +743,11 @@ class _SvgTilePainter extends CustomPainter {
         _paintText(
           canvas,
           '${key.col},${key.row}\nscale ${key.scale.toStringAsFixed(1)}',
-          Offset(tileRect.left + 6 / gridScale, tileRect.top + 6 / gridScale),
-          fontSize: 12 / gridScale,
+          Offset(tileRect.left + 6 / tileScale, tileRect.top + 6 / tileScale),
+          fontSize: 12 / tileScale,
         );
       }
-    });
+    }
   }
 
   void _paintText(

@@ -306,6 +306,57 @@ void main() {
         debugPrint = previousDebugPrint;
       }
     });
+
+    testWidgets('should keep cached tiles visible while raster scale changes',
+        (final tester) async {
+      final previousDebugPrint = debugPrint;
+      debugPrint = (
+        final message, {
+        final wrapWidth,
+      }) {};
+      final transformationController = TransformationController();
+      final renderPropertiesNotifier = ValueNotifier(
+        SvgMapRenderProperties(
+          svgData: svgTestContent,
+          svgSource: SvgSource.string,
+          mapSize: null,
+          renderquality: 20,
+          renderingStrategy: RenderStrategy.picture,
+        ),
+      );
+      addTearDown(transformationController.dispose);
+      addTearDown(renderPropertiesNotifier.dispose);
+
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: FloorMapWidget(
+              svgTestContent,
+              const [],
+              transformationController: transformationController,
+              renderPropertiesNotifier: renderPropertiesNotifier,
+              debugTiles: true,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        transformationController.value = Matrix4.diagonal3Values(8, 8, 1);
+        await tester.pumpAndSettle();
+
+        transformationController.value = Matrix4.identity();
+        await tester.pump();
+        await tester.pump();
+
+        final debugText = tester.widget<Text>(
+          find.textContaining('cache:'),
+        );
+        expect(debugText.data, isNot(contains('cache: 0,')));
+        expect(debugText.data, matches(RegExp('tiles: [1-9]')));
+      } finally {
+        debugPrint = previousDebugPrint;
+      }
+    });
   });
 
   group('FloorPathPainter Tests', () {

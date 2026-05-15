@@ -162,7 +162,8 @@ FloorMapWidget(
 ```
 
 Панель закреплена в правом верхнем углу поверх приложения и сворачивается по
-нажатию. Она показывает видимый диапазон тайлов, cached/pending tiles,
+нажатию. Она показывает количество отрисованных/видимых тайлов, видимый
+диапазон тайлов, effective/requested raster scale, cached/pending tiles,
 hits/misses, generated tiles и pruned tiles.
 
 Для расширенного управления качеством при масштабировании можно передать свои
@@ -188,7 +189,33 @@ FloorMapWidget(
 )
 ```
 
-Чтобы добавить на карту интерактивные объекты, необходимо их инициализировать виджетом FloorItemWidget и передать списком в FloorItemWidget.
+#### Параметры FloorMapWidget
+
+| Параметр | Тип | Обязательный | Описание |
+| --- | --- | --- | --- |
+| `svgContent` | `String` | Да | SVG-разметка, используемая стандартным string source. |
+| `listItemsWidgets` | `List<FloorItemWidget>` | Да | Интерактивные overlay-объекты, которые отрисовываются поверх карты. |
+| `listPoints` | `List<FloorPoint>?` | Нет | Заранее распарсенные точки маршрута. Если не передать, они будут получены из `svgContent`. |
+| `renderPropertiesNotifier` | `ValueNotifier<SvgMapRenderProperties>?` | Нет | Внешнее состояние рендера карты для управления SVG source, качеством и loading widget. |
+| `transformationController` | `TransformationController?` | Нет | Общий контроллер для родительского `InteractiveViewer` и тайлового renderer. |
+| `unvisiblePoints` | `bool` | Нет | Удаляет point markers из SVG string rendering. По умолчанию `false`. |
+| `debugTiles` | `bool` | Нет | Включает сворачиваемую debug-панель тайлов. По умолчанию `false`. |
+| `startIdPoint` | `int?` | Нет | Id стартовой точки маршрута. |
+| `endIdPoint` | `int?` | Нет | Id конечной точки маршрута. |
+
+#### Параметры SvgMapRenderProperties
+
+| Параметр | Тип | Значение по умолчанию | Описание |
+| --- | --- | --- | --- |
+| `svgData` | `Object` | Обязательный | SVG string, путь к SVG asset или путь к compiled vector graphic asset. |
+| `svgSource` | `SvgSource` | Обязательный | Тип источника: `SvgSource.string`, `SvgSource.asset` или `SvgSource.compiled`. |
+| `mapSize` | `Size?` | Обязательный | Размер рендера. `FloorMapWidget` синхронизирует его со своими layout constraints. |
+| `loadingPlaceholder` | `Widget?` | `null` | Виджет, который показывается во время загрузки SVG picture. |
+| `renderquality` | `double` | `5` | Запрошенное качество raster tiles. Тайловый renderer ограничивает effective quality текущим viewport scale. |
+| `renderingStrategy` | `RenderStrategy?` | `RenderStrategy.raster` | Rendering strategy из `flutter_svg`, используемая SVG loader. |
+
+Чтобы добавить на карту интерактивные объекты, инициализируйте их через
+`FloorItemWidget` и передайте получившийся список в `FloorMapWidget`.
 
 ```Dart
 FloorItemWidget(
@@ -205,6 +232,18 @@ FloorItemWidget(
     isActiveBlinking: false,
 ),
 ```
+
+#### Параметры FloorItemWidget
+
+| Параметр | Тип | Значение по умолчанию | Описание |
+| --- | --- | --- | --- |
+| `item` | `FloorItem` | Обязательный | Интерактивный объект, распарсенный из SVG. |
+| `onTap` | `Future<void> Function(FloorItem)?` | `null` | Вызывается при нажатии на объект. |
+| `durationTapAnimation` | `Duration` | `50ms` | Длительность анимации подсветки при нажатии. |
+| `durationBlink` | `Duration` | `1s` | Длительность анимации мигающей подсветки. |
+| `isActiveBlinking` | `bool` | `false` | Включает повторяющуюся мигающую подсветку. |
+| `selectedColor` | `Color?` | `null` | Цвет подсветки. Если не задан, используется стандартный полупрозрачный цвет. |
+| `parentSize` | `Size?` | `null` | Размер родительской карты. Обычно устанавливается автоматически внутри `FloorMapWidget`. |
 
 Получить объекты можно, используя FloorSvgParser.
 
@@ -231,9 +270,10 @@ final listItems = parser.getItems();
 
 ## Maintainers
 
-[ADC STUDIO](https://adc-web.ru)
+[ЛОГИОН](https://logion-mobile.ru)
 
 [Valerij Shishov](https://github.com/MixKage) |
-[Arthur Lokhov](https://github.com/i4ox)
+[Arthur Lokhov](https://github.com/i4ox) |
+[Brdn Velazquez](https://github.com/Brnd08)
 
 This library is open for issues and pull requests. If you have ideas for improvements or bugs, the repository is open to contributions!

@@ -160,8 +160,9 @@ FloorMapWidget(
 ```
 
 The debug panel is pinned to the top-right corner of the app overlay and can be
-collapsed by tapping it. It shows the visible tile range, cached and pending
-tiles, cache hits/misses, generated tiles, and pruned tiles.
+collapsed by tapping it. It shows the currently displayed/visible tile count,
+visible tile range, effective/requested raster scale, cached and pending tiles,
+cache hits/misses, generated tiles, and pruned tiles.
 
 For advanced zoom-quality control, pass your own `TransformationController` and
 `ValueNotifier<SvgMapRenderProperties>`:
@@ -186,7 +187,33 @@ FloorMapWidget(
 )
 ```
 
-To add interactive objects to the map, you need to initialize them with the FloorItemWidget and pass them as a list to FloorItemWidget.
+#### FloorMapWidget parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `svgContent` | `String` | Yes | Raw SVG markup used by the default string source. |
+| `listItemsWidgets` | `List<FloorItemWidget>` | Yes | Interactive item overlays rendered above the map layer. |
+| `listPoints` | `List<FloorPoint>?` | No | Parsed route points. If omitted, they are parsed from `svgContent`. |
+| `renderPropertiesNotifier` | `ValueNotifier<SvgMapRenderProperties>?` | No | External map render state for advanced SVG source, quality, and loading control. |
+| `transformationController` | `TransformationController?` | No | Shared controller for the parent `InteractiveViewer` and tiled renderer. |
+| `unvisiblePoints` | `bool` | No | Removes point markers from string SVG rendering. Defaults to `false`. |
+| `debugTiles` | `bool` | No | Enables the collapsible tile debug overlay. Defaults to `false`. |
+| `startIdPoint` | `int?` | No | Start route point id. |
+| `endIdPoint` | `int?` | No | End route point id. |
+
+#### SvgMapRenderProperties parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `svgData` | `Object` | Required | Raw SVG string, SVG asset path, or compiled vector graphic asset path. |
+| `svgSource` | `SvgSource` | Required | Source kind: `SvgSource.string`, `SvgSource.asset`, or `SvgSource.compiled`. |
+| `mapSize` | `Size?` | Required | Render size. `FloorMapWidget` keeps it in sync with its layout constraints. |
+| `loadingPlaceholder` | `Widget?` | `null` | Widget shown while the SVG picture is loading. |
+| `renderquality` | `double` | `5` | Requested tile raster quality. The tiled renderer caps the effective quality to the current viewport scale. |
+| `renderingStrategy` | `RenderStrategy?` | `RenderStrategy.raster` | `flutter_svg` rendering strategy used by the SVG loader. |
+
+To add interactive objects to the map, initialize them with `FloorItemWidget`
+and pass the resulting list to `FloorMapWidget`.
 
 ```Dart
 FloorItemWidget(
@@ -203,6 +230,18 @@ FloorItemWidget(
     isActiveBlinking: false,
 ),
 ```
+
+#### FloorItemWidget parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `item` | `FloorItem` | Required | Parsed interactive object from the SVG. |
+| `onTap` | `Future<void> Function(FloorItem)?` | `null` | Called when the object is tapped. |
+| `durationTapAnimation` | `Duration` | `50ms` | Tap highlight animation duration. |
+| `durationBlink` | `Duration` | `1s` | Blinking highlight animation duration. |
+| `isActiveBlinking` | `bool` | `false` | Enables repeated blinking highlight. |
+| `selectedColor` | `Color?` | `null` | Highlight color. Falls back to a default translucent color. |
+| `parentSize` | `Size?` | `null` | Parent map size. Usually set by `FloorMapWidget` automatically. |
 
 You can get the objects using FloorSvgParser.
 
@@ -228,9 +267,10 @@ To get started, read [CONTRIBUTING.md](CONTRIBUTING.md) to learn about the guide
 
 ## Maintainers
 
-[ADC STUDIO](https://adc-web.ru)
+[LOGION](https://logion-mobile.com)
 
 [Valerij Shishov](https://github.com/MixKage) |
-[Arthur Lokhov](https://github.com/i4ox)
+[Arthur Lokhov](https://github.com/i4ox) |
+[Brdn Velazquez](https://github.com/Brnd08)
 
 This library is open for issues and pull requests. If you have ideas for improvements or bugs, the repository is open to contributions!

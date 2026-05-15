@@ -251,6 +251,56 @@ void main() {
         debugPrint = previousDebugPrint;
       }
     });
+
+    testWidgets('should recheck tiles after transform changes while generating',
+        (final tester) async {
+      final previousDebugPrint = debugPrint;
+      debugPrint = (
+        final message, {
+        final wrapWidth,
+      }) {};
+      final transformationController = TransformationController();
+      final renderPropertiesNotifier = ValueNotifier(
+        SvgMapRenderProperties(
+          svgData: svgTestContent,
+          svgSource: SvgSource.string,
+          mapSize: null,
+          renderquality: 20,
+          renderingStrategy: RenderStrategy.picture,
+        ),
+      );
+      addTearDown(transformationController.dispose);
+      addTearDown(renderPropertiesNotifier.dispose);
+
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: FloorMapWidget(
+              svgTestContent,
+              const [],
+              transformationController: transformationController,
+              renderPropertiesNotifier: renderPropertiesNotifier,
+              debugTiles: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        transformationController.value = Matrix4.diagonal3Values(8, 8, 1);
+        await tester.pump();
+        transformationController.value = Matrix4.identity();
+
+        await tester.pumpAndSettle();
+
+        final debugText = tester.widget<Text>(
+          find.textContaining('cache:'),
+        );
+        expect(debugText.data, matches(RegExp('cache: [1-9]')));
+        expect(debugText.data, contains('pending: 0'));
+      } finally {
+        debugPrint = previousDebugPrint;
+      }
+    });
   });
 
   group('FloorPathPainter Tests', () {

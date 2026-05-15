@@ -124,6 +124,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   bool _isDebugPanelExpanded = true;
   bool _debugOverlaySyncScheduled = false;
   bool _debugOverlayBuildScheduled = false;
+  bool _needsTileUpdateAfterGeneration = false;
 
   String? cleanedSvgData; // Store cleaned SVG data if unvisiblePoints is true
 
@@ -405,6 +406,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     final PictureInfo pictureInfo,
   ) {
     if (_isGeneratingTiles) {
+      _needsTileUpdateAfterGeneration = true;
       return;
     }
 
@@ -503,6 +505,9 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
         try {
           for (int x = startCol; x <= endCol; x++) {
             for (int y = startRow; y <= endRow; y++) {
+              if (!mounted || generationEpoch != _generationEpoch) {
+                return;
+              }
               final key = _TileKey(x, y, rasterScale);
               if (_tileCache.containsKey(key) || _pendingTiles.contains(key)) {
                 continue;
@@ -519,10 +524,22 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
             }
           }
         } finally {
-          _isGeneratingTiles = false;
+          if (generationEpoch == _generationEpoch) {
+            _isGeneratingTiles = false;
+            _recheckTilesIfNeeded();
+          }
         }
       });
     }
+  }
+
+  void _recheckTilesIfNeeded() {
+    if (!_needsTileUpdateAfterGeneration || !mounted) {
+      return;
+    }
+
+    _needsTileUpdateAfterGeneration = false;
+    setState(() {});
   }
 
   Future<void> _generateTile(
@@ -549,13 +566,12 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
         .endRecording()
         .toImage(_tileSize.toInt(), _tileSize.toInt());
 
-    _pendingTiles.remove(key);
-
     if (!mounted || generationEpoch != _generationEpoch) {
       image.dispose();
       return;
     }
 
+    _pendingTiles.remove(key);
     _tileCache[key]?.dispose();
     _tileCache[key] = image;
     _generatedTiles++;

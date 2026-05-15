@@ -182,6 +182,7 @@ class _SvgMapExampleState extends State<SvgMapExample> {
                       // providing a string as svg data.
                       // ignored otherwise
                       unvisiblePoints: true,
+                      debugTiles: true,
                     ),
                   ),
                 ),

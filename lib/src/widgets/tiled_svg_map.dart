@@ -696,6 +696,7 @@ class _TileDebugOverlay extends StatelessWidget {
           color: Color(0xFF1E1E1E),
           fontSize: 12,
           fontWeight: FontWeight.w600,
+          decoration: TextDecoration.none,
         ),
       );
 
@@ -714,6 +715,7 @@ class _TileDebugOverlay extends StatelessWidget {
             color: Color(0xFF1E1E1E),
             fontSize: 11,
             height: 1.25,
+            decoration: TextDecoration.none,
           ),
         ),
       );

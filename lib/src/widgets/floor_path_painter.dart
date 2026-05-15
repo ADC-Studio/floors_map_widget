@@ -107,7 +107,9 @@ class _FloorPathPainterState extends State<FloorPathPainter>
 
     // Create a transformation matrix.
     final matrix4 = Matrix4.identity()
+      // ignore: deprecated_member_use
       ..translate(offsetX, offsetY)
+      // ignore: deprecated_member_use
       ..scale(scale, scale);
 
     // Apply the transformation to the path.
@@ -155,7 +157,7 @@ class _CustomPathPainter extends CustomPainter {
     canvas.drawPath(pathWithOffset, paintFill);
 
     final Paint linePaint = Paint()
-      ..color = Colors.white.withOpacity(0.5 * fadeProgress)
+      ..color = Colors.white.withValues(alpha: 0.5 * fadeProgress)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 

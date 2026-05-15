@@ -14,7 +14,7 @@ void main() {
             </g>
             <g id="Store 2">
                 <path id="shop-2=2"
-                    d="M171.447 49.6085V89.6045H234.107V65.5325V62.1365H237.515H247.307V45.3005H227.543V3.39648H149.843V37.2005H176.039H171.447В49.6085З"
+                    d="M171.447 49.6085V89.6045H234.107V65.5325V62.1365H237.515H247.307V45.3005H227.543V3.39648H149.843V37.2005H176.039H171.447V49.6085Z"
                     fill="#EEF9FE" />
             </g>
         </g>
@@ -72,7 +72,9 @@ void main() {
       );
 
       // Check that an element containing the SVG map is rendered
-      expect(find.byType(SvgMap), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.byType(CustomPaint), findsWidgets);
+      expect(find.textContaining('visible:'), findsNothing);
     });
 
     testWidgets('should render listItemsWidgets correctly',
@@ -112,9 +114,248 @@ void main() {
         ),
       );
 
-      // Check that the points are hidden
-      final svgMap = tester.widget<SvgMap>(find.byType(SvgMap));
-      expect(svgMap.hidePoints, true);
+      final cleanedSvg = FloorSvgParser.cleanPointsFromMap(svgTestContent);
+      expect(cleanedSvg, isNot(contains('point-')));
+    });
+
+    testWidgets('should show an initial route when endpoints are provided',
+        (final tester) async {
+      final parser = FloorSvgParser(svgContent: svgTestContent);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FloorMapWidget(
+            svgTestContent,
+            const [],
+            listPoints: parser.getPoints(),
+            startIdPoint: 1,
+            endIdPoint: 2,
+          ),
+        ),
+      );
+
+      expect(find.byType(FloorPathPainter), findsOneWidget);
+    });
+
+    testWidgets('should render with tile debugging enabled',
+        (final tester) async {
+      final previousDebugPrint = debugPrint;
+      debugPrint = (
+        final message, {
+        final wrapWidth,
+      }) {};
+
+      try {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: FloorMapWidget(
+              svgTestContent,
+              [],
+              debugTiles: true,
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CustomPaint), findsWidgets);
+        final expandedDebugText = tester.widget<Text>(
+          find.textContaining('visible:'),
+        );
+        expect(expandedDebugText.style?.decoration, TextDecoration.none);
+
+        final expandedHeader = tester.widget<Text>(
+          find.textContaining('tiles:'),
+        );
+        expect(expandedHeader.data, matches(RegExp('tiles: [0-9]+/[0-9]+')));
+
+        await tester.tap(find.textContaining('tiles:'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('visible:'), findsNothing);
+        final collapsedDebugText = tester.widget<Text>(
+          find.textContaining('tiles:'),
+        );
+        expect(collapsedDebugText.style?.decoration, TextDecoration.none);
+      } finally {
+        debugPrint = previousDebugPrint;
+      }
+    });
+
+    testWidgets('should accept external render properties and controller',
+        (final tester) async {
+      final parser = FloorSvgParser(svgContent: svgTestContent);
+      final transformationController = TransformationController();
+      final renderPropertiesNotifier = ValueNotifier(
+        SvgMapRenderProperties(
+          svgData: svgTestContent,
+          svgSource: SvgSource.string,
+          mapSize: null,
+          renderingStrategy: RenderStrategy.picture,
+        ),
+      );
+      addTearDown(transformationController.dispose);
+      addTearDown(renderPropertiesNotifier.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FloorMapWidget(
+            svgTestContent,
+            const [],
+            listPoints: parser.getPoints(),
+            transformationController: transformationController,
+            renderPropertiesNotifier: renderPropertiesNotifier,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(renderPropertiesNotifier.value.size, isNotNull);
+      expect(find.byType(CustomPaint), findsWidgets);
+    });
+
+    testWidgets('should cap raster scale to the current viewport',
+        (final tester) async {
+      final previousDebugPrint = debugPrint;
+      debugPrint = (
+        final message, {
+        final wrapWidth,
+      }) {};
+      final renderPropertiesNotifier = ValueNotifier(
+        SvgMapRenderProperties(
+          svgData: svgTestContent,
+          svgSource: SvgSource.string,
+          mapSize: null,
+          renderquality: 20,
+          renderingStrategy: RenderStrategy.picture,
+        ),
+      );
+      addTearDown(renderPropertiesNotifier.dispose);
+
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: FloorMapWidget(
+              svgTestContent,
+              const [],
+              renderPropertiesNotifier: renderPropertiesNotifier,
+              debugTiles: true,
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final debugText = tester.widget<Text>(
+          find.textContaining('raster:'),
+        );
+        expect(debugText.data, contains('/ 20.0'));
+        expect(debugText.data, isNot(contains('raster: 20.0 / 20.0')));
+      } finally {
+        debugPrint = previousDebugPrint;
+      }
+    });
+
+    testWidgets('should recheck tiles after transform changes while generating',
+        (final tester) async {
+      final previousDebugPrint = debugPrint;
+      debugPrint = (
+        final message, {
+        final wrapWidth,
+      }) {};
+      final transformationController = TransformationController();
+      final renderPropertiesNotifier = ValueNotifier(
+        SvgMapRenderProperties(
+          svgData: svgTestContent,
+          svgSource: SvgSource.string,
+          mapSize: null,
+          renderquality: 20,
+          renderingStrategy: RenderStrategy.picture,
+        ),
+      );
+      addTearDown(transformationController.dispose);
+      addTearDown(renderPropertiesNotifier.dispose);
+
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: FloorMapWidget(
+              svgTestContent,
+              const [],
+              transformationController: transformationController,
+              renderPropertiesNotifier: renderPropertiesNotifier,
+              debugTiles: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        transformationController.value = Matrix4.diagonal3Values(8, 8, 1);
+        await tester.pump();
+        transformationController.value = Matrix4.identity();
+
+        await tester.pumpAndSettle();
+
+        final debugText = tester.widget<Text>(
+          find.textContaining('cache:'),
+        );
+        expect(debugText.data, matches(RegExp('cache: [1-9]')));
+        expect(debugText.data, contains('pending: 0'));
+      } finally {
+        debugPrint = previousDebugPrint;
+      }
+    });
+
+    testWidgets('should keep cached tiles visible while raster scale changes',
+        (final tester) async {
+      final previousDebugPrint = debugPrint;
+      debugPrint = (
+        final message, {
+        final wrapWidth,
+      }) {};
+      final transformationController = TransformationController();
+      final renderPropertiesNotifier = ValueNotifier(
+        SvgMapRenderProperties(
+          svgData: svgTestContent,
+          svgSource: SvgSource.string,
+          mapSize: null,
+          renderquality: 20,
+          renderingStrategy: RenderStrategy.picture,
+        ),
+      );
+      addTearDown(transformationController.dispose);
+      addTearDown(renderPropertiesNotifier.dispose);
+
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: FloorMapWidget(
+              svgTestContent,
+              const [],
+              transformationController: transformationController,
+              renderPropertiesNotifier: renderPropertiesNotifier,
+              debugTiles: true,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        transformationController.value = Matrix4.diagonal3Values(8, 8, 1);
+        await tester.pumpAndSettle();
+
+        transformationController.value = Matrix4.identity();
+        await tester.pump();
+        await tester.pump();
+
+        final debugText = tester.widget<Text>(
+          find.textContaining('cache:'),
+        );
+        expect(debugText.data, isNot(contains('cache: 0,')));
+        expect(debugText.data, matches(RegExp('tiles: [1-9]')));
+      } finally {
+        debugPrint = previousDebugPrint;
+      }
     });
   });
 

@@ -29,6 +29,8 @@ class _TileKey {
 class _TileDebugInfo {
   final int cachedTiles;
   final int pendingTiles;
+  final int displayedTiles;
+  final int visibleTiles;
   final int generatedTiles;
   final int prunedTiles;
   final int cacheHits;
@@ -40,6 +42,8 @@ class _TileDebugInfo {
   const _TileDebugInfo({
     required this.cachedTiles,
     required this.pendingTiles,
+    required this.displayedTiles,
+    required this.visibleTiles,
     required this.generatedTiles,
     required this.prunedTiles,
     required this.cacheHits,
@@ -54,6 +58,8 @@ class _TileDebugInfo {
       other is _TileDebugInfo &&
       cachedTiles == other.cachedTiles &&
       pendingTiles == other.pendingTiles &&
+      displayedTiles == other.displayedTiles &&
+      visibleTiles == other.visibleTiles &&
       generatedTiles == other.generatedTiles &&
       prunedTiles == other.prunedTiles &&
       cacheHits == other.cacheHits &&
@@ -66,6 +72,8 @@ class _TileDebugInfo {
   int get hashCode => Object.hash(
         cachedTiles,
         pendingTiles,
+        displayedTiles,
+        visibleTiles,
         generatedTiles,
         prunedTiles,
         cacheHits,
@@ -109,11 +117,14 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
 
   final Map<_TileKey, ui.Image> _tileCache = {};
   final Set<_TileKey> _pendingTiles = {};
+  Set<_TileKey> _visibleTileKeys = {};
   final double _tileSize = 512; // Power of two for better GPU performance.
   int _generationEpoch = 0;
   int _tileVersion = 0;
   int _generatedTiles = 0;
   int _prunedTiles = 0;
+  int _debugDisplayedTiles = 0;
+  int _debugVisibleTiles = 0;
   int _debugCacheHits = 0;
   int _debugCacheMisses = 0;
   String _debugVisibleRange = 'none';
@@ -164,6 +175,8 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   _TileDebugInfo get _debugInfo => _TileDebugInfo(
         cachedTiles: _tileCache.length,
         pendingTiles: _pendingTiles.length,
+        displayedTiles: _debugDisplayedTiles,
+        visibleTiles: _debugVisibleTiles,
         generatedTiles: _generatedTiles,
         prunedTiles: _prunedTiles,
         cacheHits: _debugCacheHits,
@@ -176,11 +189,14 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   void _resetDebugStats() {
     _generatedTiles = 0;
     _prunedTiles = 0;
+    _debugDisplayedTiles = 0;
+    _debugVisibleTiles = 0;
     _debugCacheHits = 0;
     _debugCacheMisses = 0;
     _debugVisibleRange = 'none';
     _requestedRasterScale = 1;
     _effectiveRasterScale = 1;
+    _visibleTileKeys = {};
   }
 
   void _notifyTilesChanged() {
@@ -214,7 +230,6 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
       _debugOverlayEntry ??= OverlayEntry(
         builder: (final context) => _TileDebugOverlay(
           debugInfo: _debugInfo,
-          tileVersion: _tileVersion,
           isExpanded: _isDebugPanelExpanded,
           onToggle: _toggleDebugPanel,
         ),
@@ -475,10 +490,16 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     bool needsGeneration = false;
     int cacheHits = 0;
     int cacheMisses = 0;
+    int displayedTiles = 0;
+    final visibleTileKeys = <_TileKey>{};
     for (int x = startCol; x <= endCol; x++) {
       for (int y = startRow; y <= endRow; y++) {
         final key = _TileKey(x, y, rasterScale);
-        if (_tileCache.containsKey(key) || _pendingTiles.contains(key)) {
+        visibleTileKeys.add(key);
+        if (_tileCache.containsKey(key)) {
+          displayedTiles++;
+          cacheHits++;
+        } else if (_pendingTiles.contains(key)) {
           cacheHits++;
         } else {
           cacheMisses++;
@@ -486,6 +507,9 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
         }
       }
     }
+    _visibleTileKeys = visibleTileKeys;
+    _debugDisplayedTiles = displayedTiles;
+    _debugVisibleTiles = visibleTileKeys.length;
     _debugCacheHits = cacheHits;
     _debugCacheMisses = cacheMisses;
     _debugLog(
@@ -574,6 +598,10 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     _pendingTiles.remove(key);
     _tileCache[key]?.dispose();
     _tileCache[key] = image;
+    if (_visibleTileKeys.contains(key)) {
+      _debugDisplayedTiles =
+          _visibleTileKeys.where(_tileCache.containsKey).length;
+    }
     _generatedTiles++;
     _notifyTilesChanged();
   }
@@ -589,6 +617,7 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   void _clearCache({final bool notify = true}) {
     _generationEpoch++;
     _pendingTiles.clear();
+    _debugDisplayedTiles = 0;
     for (final img in _tileCache.values) {
       img.dispose();
     }
@@ -726,16 +755,17 @@ class _SvgTilePainter extends CustomPainter {
 
 class _TileDebugOverlay extends StatelessWidget {
   final _TileDebugInfo debugInfo;
-  final int tileVersion;
   final bool isExpanded;
   final VoidCallback onToggle;
 
   const _TileDebugOverlay({
     required this.debugInfo,
-    required this.tileVersion,
     required this.isExpanded,
     required this.onToggle,
   });
+
+  String get _tileSummary =>
+      'tiles: ${debugInfo.displayedTiles}/${debugInfo.visibleTiles}';
 
   @override
   Widget build(final BuildContext context) => Positioned(
@@ -766,7 +796,7 @@ class _TileDebugOverlay extends StatelessWidget {
       );
 
   Widget _collapsedContent() => Text(
-        'Tiles v$tileVersion +',
+        '$_tileSummary +',
         style: const TextStyle(
           color: Color(0xFF1E1E1E),
           fontSize: 12,
@@ -778,7 +808,7 @@ class _TileDebugOverlay extends StatelessWidget {
   Widget _expandedContent() => ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 260),
         child: Text(
-          'tiles v$tileVersion -\n'
+          '$_tileSummary -\n'
           'visible: ${debugInfo.visibleRange}\n'
           'raster: ${debugInfo.effectiveRasterScale.toStringAsFixed(1)} / '
           '${debugInfo.requestedRasterScale.toStringAsFixed(1)}\n'

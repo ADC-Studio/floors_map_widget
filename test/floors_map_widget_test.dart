@@ -164,12 +164,17 @@ void main() {
         );
         expect(expandedDebugText.style?.decoration, TextDecoration.none);
 
-        await tester.tap(find.textContaining('tiles v'));
+        final expandedHeader = tester.widget<Text>(
+          find.textContaining('tiles:'),
+        );
+        expect(expandedHeader.data, matches(RegExp('tiles: [0-9]+/[0-9]+')));
+
+        await tester.tap(find.textContaining('tiles:'));
         await tester.pumpAndSettle();
 
         expect(find.textContaining('visible:'), findsNothing);
         final collapsedDebugText = tester.widget<Text>(
-          find.textContaining('Tiles v'),
+          find.textContaining('tiles:'),
         );
         expect(collapsedDebugText.style?.decoration, TextDecoration.none);
       } finally {

@@ -34,6 +34,8 @@ class _TileDebugInfo {
   final int cacheHits;
   final int cacheMisses;
   final String visibleRange;
+  final double requestedRasterScale;
+  final double effectiveRasterScale;
 
   const _TileDebugInfo({
     required this.cachedTiles,
@@ -43,6 +45,8 @@ class _TileDebugInfo {
     required this.cacheHits,
     required this.cacheMisses,
     required this.visibleRange,
+    required this.requestedRasterScale,
+    required this.effectiveRasterScale,
   });
 
   @override
@@ -54,7 +58,9 @@ class _TileDebugInfo {
       prunedTiles == other.prunedTiles &&
       cacheHits == other.cacheHits &&
       cacheMisses == other.cacheMisses &&
-      visibleRange == other.visibleRange;
+      visibleRange == other.visibleRange &&
+      requestedRasterScale == other.requestedRasterScale &&
+      effectiveRasterScale == other.effectiveRasterScale;
 
   @override
   int get hashCode => Object.hash(
@@ -65,6 +71,8 @@ class _TileDebugInfo {
         cacheHits,
         cacheMisses,
         visibleRange,
+        requestedRasterScale,
+        effectiveRasterScale,
       );
 }
 
@@ -109,6 +117,9 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
   int _debugCacheHits = 0;
   int _debugCacheMisses = 0;
   String _debugVisibleRange = 'none';
+  double _requestedRasterScale = 1;
+  double _effectiveRasterScale = 1;
+  double? _activeRasterScale;
   OverlayEntry? _debugOverlayEntry;
   bool _isDebugPanelExpanded = true;
   bool _debugOverlaySyncScheduled = false;
@@ -157,6 +168,8 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
         cacheHits: _debugCacheHits,
         cacheMisses: _debugCacheMisses,
         visibleRange: _debugVisibleRange,
+        requestedRasterScale: _requestedRasterScale,
+        effectiveRasterScale: _effectiveRasterScale,
       );
 
   void _resetDebugStats() {
@@ -165,6 +178,8 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     _debugCacheHits = 0;
     _debugCacheMisses = 0;
     _debugVisibleRange = 'none';
+    _requestedRasterScale = 1;
+    _effectiveRasterScale = 1;
   }
 
   void _notifyTilesChanged() {
@@ -295,8 +310,18 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
                       ? displaySize.width / mapContentSize.width
                       : displaySize.height / mapContentSize.height;
 
-              // Use the renderProperties.quality as rasterScale
-              final double rasterScale = renderProperties.quality;
+              final requestedRasterScale = renderProperties.quality;
+              final rasterScale = _effectiveRasterScaleForViewport(
+                requestedRasterScale: requestedRasterScale,
+                fitScale: fitScale,
+                zoomScale:
+                    widget.transformationController.value.getMaxScaleOnAxis(),
+                devicePixelRatio: MediaQuery.of(context).devicePixelRatio,
+              );
+              _setActiveRasterScale(
+                requestedRasterScale: requestedRasterScale,
+                effectiveRasterScale: rasterScale,
+              );
 
               // Determine which tiles are needed and trigger generation.
               _checkAndUpdateTiles(
@@ -337,7 +362,40 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
         },
       );
 
-  bool _isGeneratingTiles = false; // Add this flag to class
+  bool _isGeneratingTiles = false;
+
+  double _effectiveRasterScaleForViewport({
+    required final double requestedRasterScale,
+    required final double fitScale,
+    required final double zoomScale,
+    required final double devicePixelRatio,
+  }) {
+    if (requestedRasterScale <= 0) {
+      return 1;
+    }
+
+    final screenRasterScale = fitScale * zoomScale * devicePixelRatio;
+    final quantizedScale = (screenRasterScale * 2).ceilToDouble() / 2;
+    final upperScale = quantizedScale < 0.5 ? 0.5 : quantizedScale;
+    return requestedRasterScale.clamp(0.5, upperScale);
+  }
+
+  void _setActiveRasterScale({
+    required final double requestedRasterScale,
+    required final double effectiveRasterScale,
+  }) {
+    _requestedRasterScale = requestedRasterScale;
+    _effectiveRasterScale = effectiveRasterScale;
+
+    if (_activeRasterScale == effectiveRasterScale) {
+      return;
+    }
+
+    _activeRasterScale = effectiveRasterScale;
+    _isGeneratingTiles = false;
+    _clearCache(notify: false);
+    _markDebugOverlayNeedsBuild();
+  }
 
   void _checkAndUpdateTiles(
     final Size mapContentSize,
@@ -430,7 +488,8 @@ class _TiledSvgMapState extends State<TiledSvgMap> {
     _debugCacheMisses = cacheMisses;
     _debugLog(
       '$_debugVisibleRange, hits: $cacheHits, misses: $cacheMisses, '
-      'cached: ${_tileCache.length}, pending: ${_pendingTiles.length}',
+      'cached: ${_tileCache.length}, pending: ${_pendingTiles.length}, '
+      'raster: $rasterScale/${currentRenderProperties.quality}',
     );
     _markDebugOverlayNeedsBuild();
 
@@ -705,6 +764,8 @@ class _TileDebugOverlay extends StatelessWidget {
         child: Text(
           'tiles v$tileVersion -\n'
           'visible: ${debugInfo.visibleRange}\n'
+          'raster: ${debugInfo.effectiveRasterScale.toStringAsFixed(1)} / '
+          '${debugInfo.requestedRasterScale.toStringAsFixed(1)}\n'
           'cache: ${debugInfo.cachedTiles}, '
           'pending: ${debugInfo.pendingTiles}\n'
           'hits: ${debugInfo.cacheHits}, '

@@ -209,6 +209,48 @@ void main() {
       expect(renderPropertiesNotifier.value.size, isNotNull);
       expect(find.byType(CustomPaint), findsWidgets);
     });
+
+    testWidgets('should cap raster scale to the current viewport',
+        (final tester) async {
+      final previousDebugPrint = debugPrint;
+      debugPrint = (
+        final message, {
+        final wrapWidth,
+      }) {};
+      final renderPropertiesNotifier = ValueNotifier(
+        SvgMapRenderProperties(
+          svgData: svgTestContent,
+          svgSource: SvgSource.string,
+          mapSize: null,
+          renderquality: 20,
+          renderingStrategy: RenderStrategy.picture,
+        ),
+      );
+      addTearDown(renderPropertiesNotifier.dispose);
+
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: FloorMapWidget(
+              svgTestContent,
+              const [],
+              renderPropertiesNotifier: renderPropertiesNotifier,
+              debugTiles: true,
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final debugText = tester.widget<Text>(
+          find.textContaining('raster:'),
+        );
+        expect(debugText.data, contains('/ 20.0'));
+        expect(debugText.data, isNot(contains('raster: 20.0 / 20.0')));
+      } finally {
+        debugPrint = previousDebugPrint;
+      }
+    });
   });
 
   group('FloorPathPainter Tests', () {

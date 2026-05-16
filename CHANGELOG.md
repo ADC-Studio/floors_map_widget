@@ -29,6 +29,13 @@
 - Fixed debug overlay text decoration when rendered from a root overlay.
 - Fixed package validation for the checked-in example SVG asset.
 
+## 1.0.1 Release Notes (2024-10-19)
+
+- add tests
+- clean code
+- add support change color in FloorPathPainter
+- fix get hashCode
+
 ## 1.0.0 Release Notes (2024-10-18)
 
 ### Add support basic interactive objects

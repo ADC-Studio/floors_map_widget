@@ -1,5 +1,11 @@
 <!-- markdownlint-disable MD041 -->
 
+## 2.0.1 Release Notes (2026-05-15)
+
+### Fixed
+
+- tighten flutter_svg lower bound
+
 ## 2.0.0 Release Notes (2026-05-15)
 
 ### Added

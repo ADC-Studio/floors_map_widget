@@ -10,8 +10,9 @@
         </strong>
     </p>
 
-[![build](https://img.shields.io/github/actions/workflow/status/ADC-Studio/floors_map_widget/build.yml)](https://github.com/ADC-Studio/floors_map_widget/actions)
 [![release](https://img.shields.io/pub/v/floors_map_widget)](https://github.com/hydralauncher/hydra/releases)
+[![platform](https://img.shields.io/badge/Platform-Flutter-02569B?logo=flutter)](https://flutter.dev)
+[![license](https://img.shields.io/github/license/codenameakshay/flutter-floating-bottom-bar?color=red)](https://opensource.org/licenses/MIT)
 
 [![ru](https://img.shields.io/badge/lang-ru-yellow.svg)](README.ru.md)
 

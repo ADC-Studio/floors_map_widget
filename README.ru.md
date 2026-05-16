@@ -72,14 +72,15 @@
 
 ### Этап 1 - Добавление точек маршрута
 
-Используя Figma или любой другой редактор SVG, создаём карту помещения или используем уже готовую.
-Теперь данную карту нужно подготовить к работе с FloorMapWidget. Необходимо задать точки маршрута и точки входов в объекты помещения. Для этого можно использовать готовое расширение для Figma [здесь](https://github.com/ADC-Studio/FloorsMapWidgetFigmaExtension) или сделать это вручную.
+Используя Inkscape или любой другой редактор SVG, создаём карту помещения или используем уже готовую.
+Теперь данную карту нужно подготовить к работе с FloorMapWidget. Необходимо задать точки маршрута и точки входов в объекты помещения. Для этого можно использовать готовое расширение для Inkscape [floors_map_extension](https://github.com/Brnd08/floors_map_extension) или сделать это вручную.
 
-#### Расширение Figma
+#### Расширение Inkscape
 
-Расставляем точки и соединяем их в маршруты. Более детальное описание можно прочитать [здесь](https://github.com/ADC-Studio/FloorsMapWidgetFigmaExtension).
+Расширение Inkscape [floors_map_extension](https://github.com/Brnd08/floors_map_extension) помогает подготовить SVG-карту для этого виджета: соединяет выбранные point shapes, назначает совместимые id для точек и объектов, создаёт точки входа, связывает объекты с их входами и удаляет больше не связанные точки. Используйте его, если хотите привести SVG к ID-паттернам, которые ожидает `FloorSvgParser`, без ручного редактирования id у каждого объекта.
 
-![MapPlaginExample](https://github.com/user-attachments/assets/2a780fb4-5541-4334-a229-a7577a65b730)
+![MapPlaginExample1](https://github.com/user-attachments/assets/1f61cf91-e84a-41ed-aca2-e24e4db4f8f6)
+![MapPlaginExample2](https://github.com/user-attachments/assets/61c5ef6f-93cf-4640-9577-a522a5efaf68)
 
 #### Реализация вручную
 

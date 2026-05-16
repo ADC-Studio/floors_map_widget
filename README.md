@@ -71,14 +71,15 @@ Working with the library is divided into several stages.
 
 ### Stage 1 - Adding Route Points
 
-Using Figma or any other SVG editor, create a floor map or use an existing one.
-Now, you need to prepare this map to work with FloorMapWidget. You need to set route points and entrance points to room objects. You can use the ready-made Figma extension [here](https://github.com/ADC-Studio/FloorsMapWidgetFigmaExtension) or do it manually.
+Using Inkscape or any other SVG editor, create a floor map or use an existing one.
+Now, you need to prepare this map to work with FloorMapWidget. You need to set route points and entrance points to room objects. You can use the ready-made Inkscape extension [floors_map_extension](https://github.com/Brnd08/floors_map_extension) or do it manually.
 
-#### Figma Extension
+#### Inkscape Extension
 
-Place the points and connect them into routes. You can read a more detailed description [here](https://github.com/ADC-Studio/FloorsMapWidgetFigmaExtension).
+The [floors_map_extension](https://github.com/Brnd08/floors_map_extension) Inkscape extension helps prepare SVG maps for this widget: it can connect selected point shapes, assign compatible point/building IDs, create entrance points, link building objects to their entrances, and clean up no-longer-linked points. Use it when you want the SVG to follow the ID patterns expected by `FloorSvgParser` without editing every object id by hand.
 
-![MapPluginExample](https://github.com/user-attachments/assets/2a780fb4-5541-4334-a229-a7577a65b730)
+![MapPlaginExample1](https://github.com/user-attachments/assets/1f61cf91-e84a-41ed-aca2-e24e4db4f8f6)
+![MapPlaginExample2](https://github.com/user-attachments/assets/61c5ef6f-93cf-4640-9577-a522a5efaf68)
 
 #### Manual Implementation
 

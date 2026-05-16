@@ -1,0 +1,12 @@
+build/
+
+example/android/
+example/ios/
+example/linux/
+example/macos/
+example/windows/
+example/web/
+
+example/.dart_tool/
+example/build/
+example/pubspec.lock

@@ -36,6 +36,9 @@ This widget allows you to create an interactive floor map based on an SVG image.
 - Generation of an interactive map based on an SVG image.
 - Creating and visualizing routes between different points.
 - Configuring interactions when clicking on a block.
+- Tiled SVG rendering for smoother work with large maps.
+- Optional tile debug overlay for inspecting visible tile ranges and cache
+  behavior during development.
 
 ## Supported Object Classes
 
@@ -68,14 +71,15 @@ Working with the library is divided into several stages.
 
 ### Stage 1 - Adding Route Points
 
-Using Figma or any other SVG editor, create a floor map or use an existing one.
-Now, you need to prepare this map to work with FloorMapWidget. You need to set route points and entrance points to room objects. You can use the ready-made Figma extension [here](https://github.com/ADC-Studio/FloorsMapWidgetFigmaExtension) or do it manually.
+Using Inkscape or any other SVG editor, create a floor map or use an existing one.
+Now, you need to prepare this map to work with FloorMapWidget. You need to set route points and entrance points to room objects. You can use the ready-made Inkscape extension [floors_map_extension](https://github.com/Brnd08/floors_map_extension) or do it manually.
 
-#### Figma Extension
+#### Inkscape Extension
 
-Place the points and connect them into routes. You can read a more detailed description [here](https://github.com/ADC-Studio/FloorsMapWidgetFigmaExtension).
+The [floors_map_extension](https://github.com/Brnd08/floors_map_extension) Inkscape extension helps prepare SVG maps for this widget: it can connect selected point shapes, assign compatible point/building IDs, create entrance points, link building objects to their entrances, and clean up no-longer-linked points. Use it when you want the SVG to follow the ID patterns expected by `FloorSvgParser` without editing every object id by hand.
 
-![MapPluginExample](https://github.com/user-attachments/assets/2a780fb4-5541-4334-a229-a7577a65b730)
+![MapPlaginExample1](https://github.com/user-attachments/assets/1f61cf91-e84a-41ed-aca2-e24e4db4f8f6)
+![MapPlaginExample2](https://github.com/user-attachments/assets/61c5ef6f-93cf-4640-9577-a522a5efaf68)
 
 #### Manual Implementation
 
@@ -128,19 +132,89 @@ Add the library to your project and embed the ready widget containing the necess
 
 ```Dart
 FloorMapWidget(
-    // String from SVG Map
-    _svgContent,
-    // Floors widgets
-    _listWidgets,
-    // Use to build a route
-    startIdPoint: _startPointItem?.idPoint,
-    endIdPoint:_endPointItem?.idPoint,
-    // Use to remove points from SVG
-    unvisiblePoints: true,
+  // String from SVG Map
+  _svgContent,
+  // Floor widgets
+  _listWidgets,
+  // Optional: parsed route points. If omitted, FloorMapWidget parses them.
+  listPoints: _listPoints,
+  // Use to build a route
+  startIdPoint: _startPointItem?.idPoint,
+  endIdPoint: _endPointItem?.idPoint,
+  // Use to remove point markers from SVG string rendering
+  unvisiblePoints: true,
 ),
 ```
 
-To add interactive objects to the map, you need to initialize them with the FloorItemWidget and pass them as a list to FloorItemWidget.
+By default, the widget renders the SVG through the tiled renderer. This keeps
+the map layer independent from interactive item overlays and reduces repeated
+raster work while panning and zooming.
+
+For development, enable the tile debug overlay:
+
+```dart
+FloorMapWidget(
+  _svgContent,
+  _listWidgets,
+  debugTiles: true,
+)
+```
+
+The debug panel is pinned to the top-right corner of the app overlay and can be
+collapsed by tapping it. It shows the currently displayed/visible tile count,
+visible tile range, effective/requested raster scale, cached and pending tiles,
+cache hits/misses, generated tiles, and pruned tiles.
+
+For advanced zoom-quality control, pass your own `TransformationController` and
+`ValueNotifier<SvgMapRenderProperties>`:
+
+```dart
+final transformationController = TransformationController();
+final renderPropertiesNotifier = ValueNotifier(
+  SvgMapRenderProperties(
+    svgData: svgContent,
+    svgSource: SvgSource.string,
+    mapSize: null,
+    renderingStrategy: RenderStrategy.picture,
+  ),
+);
+
+FloorMapWidget(
+  svgContent,
+  itemWidgets,
+  listPoints: points,
+  transformationController: transformationController,
+  renderPropertiesNotifier: renderPropertiesNotifier,
+)
+```
+
+#### FloorMapWidget parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `svgContent` | `String` | Yes | Raw SVG markup used by the default string source. |
+| `listItemsWidgets` | `List<FloorItemWidget>` | Yes | Interactive item overlays rendered above the map layer. |
+| `listPoints` | `List<FloorPoint>?` | No | Parsed route points. If omitted, they are parsed from `svgContent`. |
+| `renderPropertiesNotifier` | `ValueNotifier<SvgMapRenderProperties>?` | No | External map render state for advanced SVG source, quality, and loading control. |
+| `transformationController` | `TransformationController?` | No | Shared controller for the parent `InteractiveViewer` and tiled renderer. |
+| `unvisiblePoints` | `bool` | No | Removes point markers from string SVG rendering. Defaults to `false`. |
+| `debugTiles` | `bool` | No | Enables the collapsible tile debug overlay. Defaults to `false`. |
+| `startIdPoint` | `int?` | No | Start route point id. |
+| `endIdPoint` | `int?` | No | End route point id. |
+
+#### SvgMapRenderProperties parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `svgData` | `Object` | Required | Raw SVG string, SVG asset path, or compiled vector graphic asset path. |
+| `svgSource` | `SvgSource` | Required | Source kind: `SvgSource.string`, `SvgSource.asset`, or `SvgSource.compiled`. |
+| `mapSize` | `Size?` | Required | Render size. `FloorMapWidget` keeps it in sync with its layout constraints. |
+| `loadingPlaceholder` | `Widget?` | `null` | Widget shown while the SVG picture is loading. |
+| `renderquality` | `double` | `5` | Requested tile raster quality. The tiled renderer caps the effective quality to the current viewport scale. |
+| `renderingStrategy` | `RenderStrategy?` | `RenderStrategy.raster` | `flutter_svg` rendering strategy used by the SVG loader. |
+
+To add interactive objects to the map, initialize them with `FloorItemWidget`
+and pass the resulting list to `FloorMapWidget`.
 
 ```Dart
 FloorItemWidget(
@@ -157,6 +231,18 @@ FloorItemWidget(
     isActiveBlinking: false,
 ),
 ```
+
+#### FloorItemWidget parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `item` | `FloorItem` | Required | Parsed interactive object from the SVG. |
+| `onTap` | `Future<void> Function(FloorItem)?` | `null` | Called when the object is tapped. |
+| `durationTapAnimation` | `Duration` | `50ms` | Tap highlight animation duration. |
+| `durationBlink` | `Duration` | `1s` | Blinking highlight animation duration. |
+| `isActiveBlinking` | `bool` | `false` | Enables repeated blinking highlight. |
+| `selectedColor` | `Color?` | `null` | Highlight color. Falls back to a default translucent color. |
+| `parentSize` | `Size?` | `null` | Parent map size. Usually set by `FloorMapWidget` automatically. |
 
 You can get the objects using FloorSvgParser.
 
@@ -182,9 +268,10 @@ To get started, read [CONTRIBUTING.md](CONTRIBUTING.md) to learn about the guide
 
 ## Maintainers
 
-[ADC STUDIO](https://adc-web.ru)
+[LOGION](https://logion-mobile.com)
 
 [Valerij Shishov](https://github.com/MixKage) |
-[Arthur Lokhov](https://github.com/i4ox)
+[Arthur Lokhov](https://github.com/i4ox) |
+[Brdn Velazquez](https://github.com/Brnd08)
 
 This library is open for issues and pull requests. If you have ideas for improvements or bugs, the repository is open to contributions!

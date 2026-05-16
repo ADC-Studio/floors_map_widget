@@ -1,66 +1,86 @@
-# This is an example of using a widget FloorMapWidget
+# Floors Map Widget example
 
-## An example of how you can initialize the parser and create a list of interactive widgets
+This example shows how to parse an SVG floor map, create interactive objects,
+build routes, and render the map through the default tiled renderer.
 
-```Dart
-// Parser initialization
+## Initialize the parser and widgets
+
+```dart
 final parser = FloorSvgParser(svgContent: svgContent);
-// You can get anchor points from the map
-// ignore: unused_local_variable
-final listPoints = parser.getPoints();
-// You can get all objects supported by the library
-final listItems = parser.getItems();
-// We create FloorItemWidget based on FloorItem
-final listWidgets = listItems
+
+// Route graph points.
+final points = parser.getPoints();
+
+// Interactive SVG objects supported by the library.
+final items = parser.getItems();
+
+final listWidgets = items
     .map(
-    (final element) => FloorItemWidget(
-        item: element,
+      (final element) => FloorItemWidget(
+        element,
         onTap: _handleFloorItemTap,
-        // An example of how to change the color of an
-        // interaction animation
-        selectedColor: Colors.orange[200]!.withOpacity(0.5),
-        // An example of how to turn on an object's blinking
-        // Thanks to this, you can highlight some objects on the map.
-        // For example toilets or ATM
-        // ignore: avoid_redundant_argument_values
+        selectedColor: Colors.orange[200]!.withValues(alpha: 0.5),
         isActiveBlinking: false,
-    ),
+      ),
     )
     .toList();
 ```
 
-## One example of how you can easily find the necessary interactive object
+## Search and highlight objects
 
-```Dart
-// An example of how to turn on an object's blinking
+```dart
 void searchObjects<T extends FloorItem>({final FloorSubTypes? subType}) {
-_listWidgets = _listWidgets.map((final item) {
+  _listWidgets = _listWidgets.map((final item) {
     if (item.item is T && (subType == null || subType == item.item.subType)) {
-    return item.copyWith(isActiveBlinking: true);
+      return item.copyWith(isActiveBlinking: true);
     }
 
     return item.copyWith(isActiveBlinking: false);
-}).toList();
+  }).toList();
 
-setState(() {});
+  setState(() {});
 }
 ```
 
-## Displaying the map on the screen
+## Display the map
 
-``` Dart
-// Use for zoom and move
-InteractiveViewer( 
-    child: FloorItemWidget(
-    // String from SVG Map
-    _svgContent,
-    // Floors widgets
-    _listWidgets,
-    // Use for build a route
-    startIdPoint: _startPointItem?.idPoint,
-    endIdPoint: _endPointItem?.idPoint, 
-    // Use for remove points from svg
-    unvisiblePoints: true,
+Use the same `TransformationController` for the parent `InteractiveViewer` and
+`FloorMapWidget`. This lets the tiled renderer calculate the visible tile range
+from the current pan/zoom matrix.
+
+```dart
+final transformationController = TransformationController();
+final renderPropertiesNotifier = ValueNotifier(
+  SvgMapRenderProperties(
+    svgData: svgContent,
+    svgSource: SvgSource.string,
+    mapSize: null,
+    renderingStrategy: RenderStrategy.picture,
+    renderquality: renderQuality,
+  ),
+);
+
+InteractiveViewer(
+  transformationController: transformationController,
+  onInteractionEnd: _onScaleEnd,
+  maxScale: 20,
+  minScale: 1,
+  child: RepaintBoundary(
+    child: FloorMapWidget(
+      svgContent,
+      listWidgets,
+      listPoints: points,
+      renderPropertiesNotifier: renderPropertiesNotifier,
+      transformationController: transformationController,
+      startIdPoint: _startPointItem?.idPoint,
+      endIdPoint: _endPointItem?.idPoint,
+      unvisiblePoints: true,
+      debugTiles: true,
     ),
-),
+  ),
+);
 ```
+
+`debugTiles` enables the collapsible overlay with displayed/visible tile count,
+visible range, raster scale, cache/pending tiles, hits/misses, generated tiles,
+and pruned tiles. Disable it in production.

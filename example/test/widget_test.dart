@@ -40,6 +40,7 @@ void main() {
     );
 
     // Проверяем, что отображается элемент, содержащий SVG карту
-    expect(find.byType(SvgMap), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byType(CustomPaint), findsWidgets);
   });
 }

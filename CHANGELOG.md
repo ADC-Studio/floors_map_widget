@@ -1,5 +1,13 @@
 <!-- markdownlint-disable MD041 -->
 
+## 2.0.2 Release Notes (2026-06-05)
+
+### Changed
+
+- Expanded the supported `xml` dependency range to include the latest `7.x`
+  releases while retaining compatibility with `xml 6.5.0` and older supported
+  Dart SDK versions.
+
 ## 2.0.1 Release Notes (2026-05-15)
 
 ### Fixed

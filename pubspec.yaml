@@ -1,7 +1,7 @@
 name: floors_map_widget
 description: "This widget allows you to create an interactive building map from
   an SVG image"
-version: 2.0.1
+version: 2.0.2
 homepage: https://github.com/ADC-Studio/floors_map_widget.git
 repository: https://github.com/ADC-Studio/floors_map_widget.git
 issue_tracker: https://github.com/ADC-Studio/floors_map_widget/issues
@@ -16,7 +16,7 @@ dependencies:
     sdk: flutter
   collection: ^1.18.0
   flutter_svg: ^2.2.0
-  xml: ^6.5.0
+  xml: '>=6.5.0 <8.0.0'
   vector_graphics: ^1.2.0
 
 dev_dependencies:
